@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Paxos算法介绍</title>
+    <url>/2022/04/07/paxos/</url>
+    <content><![CDATA[<p>在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner</p>
+<span id="more"></span>
+
+<p><img src="/1.png" alt="算法流程"></p>
+<h2 id="Prepare阶段"><a href="#Prepare阶段" class="headerlink" title="Prepare阶段"></a>Prepare阶段</h2><p>Proposer 选择一个新的提案编号Mn（所有的编号是全序的），然后 Acceptor 的某个超过半数的子集成员发送编号为 Mn 的 Prepare 请求，要求该集合中的 Acceptor 做出如下回应：</p>
+<ul>
+<li>向 Proposer 承诺，保证不再批准任何编号小于 Mn 的提案</li>
+<li>如果 Acceptor 已经批准过任何提案，那么其就向 Proposer 反馈当前该 Acceptor 已经批准的编号的提案的值</li>
+</ul>
+<p>每个 Acceptor只需要记住它已经做出 Prepare 请求响应的提案的最大编号或者已经批准的提案的最大编号和值，以便在出现故障或者节点重启的情况下，也能保证P2c的不变性。</p>
+<p>对于 Proposer 来说，只要它可以保证不会产生具有相同编号的提案，那么就可以丢弃任意的提案以及它的所有运行时状态信息。</p>
+<h2 id="Accept阶段"><a href="#Accept阶段" class="headerlink" title="Accept阶段"></a>Accept阶段</h2><p>如果 Proposer 收到来自半数以上的 Acceptor 对于其发出的编号为 Mn 的 Prepare 请求的响应，那么它就会发送一个针对【Mn，Vn】提案的 Accept 请求给 Acceptor。</p>
+<p>如果 Acceptor 收到这个针对【Mn，Vn】提案的 Accept 请求，只要该 Acceptor 尚未对编号大于 Mn 的 Prepare 请求做出过保证，它就可以通过这个提案</p>
+<h2 id="提案获取"><a href="#提案获取" class="headerlink" title="提案获取"></a>提案获取</h2><p>让 Learn 获取到已经被半数以上的 Acceptor 批准的提案：</p>
+<ul>
+<li>一个简单的做法是，一旦 Acceptor 批准了一个提案，就将该提案发送给所有的 Learner。这种做法可以让 Learner 尽快地获取被选定的提案，但是需要让每个 Acceptor 与所有的 Learner 逐个进行一次通信…</li>
+<li>另一种可行方案是，将结果发送给主 Learner，通过 Learner之间的通信来互相感知提案的选定，这种方案减少了通信次数，但会存在单点故障的问题</li>
+<li>一个折中的方案是，Acceptor 将批准的提案发送给一个特定的 Learner 集合，集合中 Learner 的个数越多，可靠性越好，但同时网络通信的复杂度越高</li>
+</ul>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p><strong>我们的目的是选取一个最终的一致性值 V，为什么需要引入提案编号 M 进行辅助呢？</strong></p>
+<p>如果不使用编号，Acceptor 在接受到提案后就进行批准的情况下，没办法选出大多数。因此引入一个全局唯一的序号进行关联，且生成的编号是全序的，不过编号不再算法的考虑之内。</p>
+<p><strong>为什么算法要求至少保证 Prepare 请求和 Accept 请求都发送给半数以上的 Acceptor 子集？</strong></p>
+<p>任意两个半数以上的集合，必定包含至少一个公共元素，简单来说，就说不会形成一个孤岛，独自通过一个议案</p>
+<p><strong>算法一定有效吗？</strong></p>
+<p>Basic Paxos 算法很大程度上保证了有效性，但依然会存在这样一种可能：</p>
+<p><img src="/2.png" alt="活锁"></p>
+<p>两个 Proposer 交替 Prepare 成功，而 Accept 失败，形成活锁（Livelock）。</p>
+<p>为了这种情况，就必须选择一个主 Proposer，并规定只有主 Proposer 才能提出议案，这样没有 Proposer 竞争，解决了活锁问题。在系统中仅有一个 Proposer 进行 Value 提交的情况下，Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。</p>
+<p>选取一个主 Proposer 也是一次决议的过程，可以通过 Basic paxos 算法选取。</p>
+<p><strong>选取主 Proposer 不是也会出现上述问题吗？</strong></p>
+<p>我的理解是，选取主 Proposer 的过程可以看作是算法 init 的阶段，失败了重试就可以了，并不会对数据造成影响，只要保证后续的可持续性就OK</p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MapReduce论文阅读</title>
+    <url>/2022/04/01/MapReduce/</url>
+    <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>对于大数据量任务的处理，要想在可接受的时间内完成运算，只有将这些计算分布在成百上千的主机上。如何处理并行计算、如何分发数据、如何处理错误？所有这些问题综合在一起，需要大量的代码处理，因此也使得原本简单的运算变得难以处理。</p>
+<p>为了解决上述复杂的问题，我们设计一个新的抽象模型，使用这个抽象模型，我们只要表述我们想要执行的简单运算即可，而不必关心并行计算、容错、数据分布、负载均衡等复杂的细节，这些问题都被封装在了一个库里面—MapReduce。</p>
+<span id="more"></span>
+<h2 id="Programming-Model"><a href="#Programming-Model" class="headerlink" title="Programming Model"></a>Programming Model</h2><p>MapReduce 库的用户只需要聚焦于两个函数的实现来进行任务的处理：Map 和 Reduce。</p>
+<ul>
+<li>Map, takes an input pair and produces a set of intermediate key&#x2F;value pairs. The MapReduce library groups together all intermediate values associated with the same intermediate key I and passes them to the Reduce function</li>
+<li>The Reduce function, accepts an intermediate key I and a set of values for that key. It merges together these values to form a possibly smaller set of values. Typically just zero or one output value is produced per Reduce invocation. The intermediate values are supplied to the user’s reduce function via an iterator. This allows us to handle lists of values that are too large to fit in memory</li>
+</ul>
+<h2 id="Execution-Overview"><a href="#Execution-Overview" class="headerlink" title="Execution Overview"></a>Execution Overview</h2><p><img src="/1.png" alt="Execution Overview"></p>
+<ol>
+<li>用户程序首先调用的 MapReduce 库将输入文件分成 M 个数据片段，每个数据片段的大小一般从 16MB 到 64MB（可以通过可选的参数来控制每个数据片段的大小）。然后用户程序在机群中创建大量的程序副本。</li>
+<li>这些程序副本中的有一个特殊的程序–-master。副本中其它的程序都是 worker 程序，由 master 分配任务。有 M 个 Map 任务和 R 个 Reduce 任务将被分配，master 将一个 Map 任务或 Reduce 任务分配给一个空闲的 worker。</li>
+<li>被分配了 map 任务的 worker 程序读取相关的输入数据片段，从输入的数据片段中解析出 key&#x2F;value pair，然后把 key&#x2F;value pair 传递给用户自定义的 Map 函数，由 Map 函数生成并输出的中间 key&#x2F;value pair，并缓存在内存中。</li>
+<li>缓存中的 key&#x2F;value pair 通过分区函数分成 R 个区域，之后周期性的写入到本地磁盘上。缓存的 key&#x2F;value pair 在本地磁盘上的存储位置将被回传给 master，由 master 负责把这些存储位置再传送给 Reduce worker</li>
+<li>当 Reduce worker 程序接收到 master 程序发来的数据存储位置信息后，使用 RPC 从 Map worker 所在主机的磁盘上读取这些缓存数据。当 Reduce worker 读取了所有的中间数据后，通过对 key 进行排序后使得具有相同 key 值的数据聚合在一起。由于许多不同的 key 值会映射到相同的 Reduce 任务上，因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。</li>
+<li>Reduce worker 程序遍历排序后的中间数据，对于每一个唯一的中间 key 值，Reduce worker 程序将这个 key 值和它相关的中间 value 值的集合传递给用户自定义的 Reduce 函数。Reduce 函数的输出被追加到所属分区的输出文件。</li>
+<li>当所有的 Map 和 Reduce 任务都完成之后，master 唤醒用户程序。在这个时候，在用户程序里的对 MapReduce 调用才返回。</li>
+</ol>
+<p>结束后会产生R个输出文件。用户可以将其feed到下一个MapReduce中去，或者在另外一个可以处理多个分割文件的分布式应用中使用。</p>
+<h2 id="Master-Data-Structures"><a href="#Master-Data-Structures" class="headerlink" title="Master Data Structures"></a>Master Data Structures</h2><p>Master持有一些数据结构，它存储每一个Map和Reduce任务的状态(idle, in-progress, or completed), 以及Worker机器的标识(for non-idle tasks)。</p>
+<p>Master就像一个数据管道，中间文件存储区域的位置信息通过这个管道从Map传递到Reduce。因此，对于每个已经完成的Map任务，master存储了Map任务产生的R个中间文件存储区域的大小和位置。当Map任务完成时，Master接收到位置和大小的更新信息，这些信息被逐步递增的推送给那些正在工作的Reduce任务。</p>
+<h2 id="Fault-Tolerance"><a href="#Fault-Tolerance" class="headerlink" title="Fault Tolerance"></a>Fault Tolerance</h2><h3 id="Worker-Failure"><a href="#Worker-Failure" class="headerlink" title="Worker Failure"></a>Worker Failure</h3><p>master周期性的ping每个worker。如果在一个约定的时间范围内没有收到worker返回的信息，master将把这个worker标记为失效：</p>
+<ul>
+<li>由于 Map 任务将数据临时存储在本地，所有由这个失效的worker完成的或正在运行的Map任务被重设为初始的idle状态，之后这些任务再被安排给其他的worker。</li>
+<li>对于这个woker的in-progress reduce task，同样重置为idle，而已经完成的Reduce任务的输出存储在全局文件系统上，因此不需要再次执行。</li>
+</ul>
+<p>当一个Map任务首先被worker A执行，之后由于worker A失效了又被调度到worker B执行，这个“重新执行”的动作会被通知给所有执行Reduce任务的worker。任何还没有从worker A读取数据的Reduce任务将从worker B读取数据。</p>
+<h3 id="Master-Failure"><a href="#Master-Failure" class="headerlink" title="Master Failure"></a>Master Failure</h3><p>由于只有一个master进程，master失效后再恢复是比较麻烦的，因此我们现在的实现是如果master失效，就中止MapReduce运算。客户可以检查到这个状态，并且可以根据需要重新执行MapReduce操作。</p>
+<h2 id="Locality"><a href="#Locality" class="headerlink" title="Locality"></a>Locality</h2><p>MapReduce的master在调度Map任务时会考虑输入文件的位置信息，尽量将一个Map任务调度在包含相关输入数据拷贝的机器上执行；如果上述努力失败了，master将尝试在保存有输入数据拷贝的机器附近的机器上执行Map任务(例如，分配到一个和包含输入数据的机器在一个switch里的worker机器上执行)。当在一个足够大的cluster集群上运行大型MapReduce操作的时候，大部分的输入数据都能从本地机器读取，因此消耗非常少的网络带宽。</p>
+<h2 id="Backup-Tasks"><a href="#Backup-Tasks" class="headerlink" title="Backup Tasks"></a>Backup Tasks</h2><p>在运算过程中，如果有一台机器花了很长的时间才完成最后几个Map或Reduce任务，导致MapReduce操作总的执行时间超过预期。比如：一个机器的硬盘出了问题，在读取的时候要经常的进行读取纠错操作，导致读取数据的速度从30M&#x2F;s降低到1M&#x2F;s。比如cluster的调度系统在这台机器上又调度了其他的任务，由于CPU、内存、本地硬盘和网络带宽等竞争因素的存在，导致执行MapReduce代码的执行效率更加缓慢。</p>
+<p>当一个MapReduce操作接近完成的时候，master调度备用（backup）任务进程来执行剩下的、处于处理中状态（in-progress）的任务。无论是最初的执行进程、还是备用（backup）任务进程完成了任务，我们都把这个任务标记成为已经完成。此机制通常只会占用比正常操作多几个百分点的计算资源。但能减少近 50% 的任务完成总时间。</p>
+<h2 id="Refinements"><a href="#Refinements" class="headerlink" title="Refinements"></a>Refinements</h2><h3 id="Partitioning-Function"><a href="#Partitioning-Function" class="headerlink" title="Partitioning Function"></a>Partitioning Function</h3><p>MapReduce 缺省的分区函数是使用 hash 方法（比如，hash(key) mod R) 进行分区。hash 方法能产生非常平衡的分区。然而，有的时候，其它的一些分区函数对 key 值进行的分区将非常有用。比如，输出的 key 值是 URLs，有的用户希望每个主机的所有条目保持在同一个输出文件中。为了支持类似的情况，MapReduce 库的用户需要提供专门的分区函数。例如，使用“hash(Hostname(urlkey))mod R”作为分区函数就可以把所有来自同一个主机的 URLs 保存在同一个输出文件中。</p>
+<h3 id="Ordering-Guarantees"><a href="#Ordering-Guarantees" class="headerlink" title="Ordering Guarantees"></a>Ordering Guarantees</h3><p>在给定的分区中，中间key&#x2F;value pair数据的处理顺序是按照key值增量顺序处理的。这样的顺序保证对每个分区成生成一个有序的输出文件，这对于需要对输出文件按key值随机存取的应用非常有意义，对在排序输出的数据集也很有帮助。</p>
+<h3 id="Combiner-Function"><a href="#Combiner-Function" class="headerlink" title="Combiner Function"></a>Combiner Function</h3><p>在某些情况下，Map函数产生的中间key值的重复数据会占很大的比重，并且，用户自定义的Reduce函数满足结合律和交换律。比如一个单词统计程序。可以通过一个combiner函数首先在本地将这些记录进行一次合并，然后将合并的结果再通过网络发送出去。</p>
+<p>Combiner函数在每台执行Map任务的机器上都会被执行一次。一般情况下，Combiner和Reduce函数是一样的。Combiner函数和Reduce函数之间唯一的区别是MapReduce库怎样控制函数的输出。Reduce函数的输出被保存在最终的输出文件里，而Combiner函数的输出被写到中间文件里，然后被发送给Reduce任务。</p>
+<h3 id="Side-effects"><a href="#Side-effects" class="headerlink" title="Side-effects"></a>Side-effects</h3><p>通常应用程序首先把输出结果写到一个临时文件中，在输出全部数据之后，在使用系统级的原子操作 rename 重新命名这个临时文件。</p>
+<h3 id="Skipping-Bad-Records"><a href="#Skipping-Bad-Records" class="headerlink" title="Skipping Bad Records"></a>Skipping Bad Records</h3><p>每个worker进程都设置了信号处理函数捕获内存段异常（segmentation violation）和总线错误（bus error）。在执行Map或者Reduce操作之前，MapReduce库通过全局变量保存记录序号。如果用户程序触发了一个系统信号，消息处理函数将用“最后一口气”通过UDP包向master发送处理的最后一条记录的序号。当master看到在处理某条特定记录不止失败一次时，master就标志着条记录需要被跳过，并且在下次重新执行相关的Map或者Reduce任务的时候跳过这条记录。(前提是忽略一些有问题的记录也是可以接受的)</p>
+<h3 id="Counters"><a href="#Counters" class="headerlink" title="Counters"></a>Counters</h3><p>用户可能想统计已经处理了多少个单词、已经索引的多少篇German文档等等。用户在程序中创建一个命名的计数器对象，在Map和Reduce函数中相应的增加计数器的值。这些计数器的值周期性的从各个单独的worker机器上传递给master（附加在ping的应答包中传递）。master把执行成功的Map和Reduce任务的计数器值进行累计，当MapReduce操作完成之后，返回给用户代码。</p>
+<h2 id="Conclusions"><a href="#Conclusions" class="headerlink" title="Conclusions"></a>Conclusions</h2><p>MapReduce编程模型在Google内部成功应用于多个领域。这种成功可以归结为几个方面：</p>
+<ul>
+<li>MapReduce封装了并行处理、容错处理、数据本地化优化、负载均衡等等技术难点的细节，这使得MapReduce库易于使用</li>
+<li>大量不同类型的问题都可以通过MapReduce简单的解决。比如，MapReduce用于生成Google的网络搜索服务所需要的数据、用来排序、用来数据挖掘、用于机器学习，以及很多其它的系统</li>
+<li>实现了一个在数千台计算机组成的大型集群上灵活部署运行的MapReduce。这个实现使得有效利用这些丰富的计算资源变得非常简单，因此也适合用来解决其他很多需要大量计算的问题。</li>
+</ul>
+<h2 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h2><ul>
+<li>分布式的Grep：Map函数输出匹配某个模式的一行，Reduce函数是一个恒等函数，即把中间数据复制到输出。</li>
+<li>计算URL访问频率：Map函数处理日志中web页面请求的记录，然后输出(URL,1)。Reduce函数把相同URL的value值都累加起来，产生(URL,记录总数)结果。</li>
+<li>倒转网络链接图：Map函数在源页面（source）中搜索所有的链接目标（target）并输出为(target,source)。Reduce函数把给定链接目标（target）的链接组合成一个列表，输出(target,list(source))。</li>
+<li>每个主机的检索词向量：检索词向量用一个(词,频率)列表来概述出现在文档或文档集中的最重要的一些词。Map函数为每一个输入文档输出(主机名,检索词向量)，其中主机名来自文档的URL。Reduce函数接收给定主机的所有文档的检索词向量，并把这些检索词向量加在一起，丢弃掉低频的检索词，输出一个最终的(主机名,检索词向量)。</li>
+<li>倒排索引：Map函数分析每个文档输出一个(词,文档号)的列表，Reduce函数的输入是一个给定词的所有（词，文档号），排序所有的文档号，输出(词,list（文档号）)。所有的输出集合形成一个简单的倒排索引，它以一种简单的算法跟踪词在文档中的位置。</li>
+<li>分布式排序：Map函数从每个记录提取key，输出(key,record)。Reduce函数不改变任何的值。这个运算依赖分区机制(在4.1描述)和排序属性(在4.2描述)。</li>
+</ul>
+<h2 id="相关资料"><a href="#相关资料" class="headerlink" title="相关资料"></a>相关资料</h2><p><a href="https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>GFS论文阅读</title>
+    <url>/2022/04/03/GFS/</url>
+    <content><![CDATA[<h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>Google File System，一种专有分布式文件系统。GFS为在廉价商用设备上运行提供了容错能力，并可以在有大量客户端的情况下提供较高的整体性能。</p>
+<span id="more"></span>
+
+<p>分布式存储系统的四个背景：</p>
+<ol>
+<li>分布式组件经常发生错误，应当将此视为常态而不是意外</li>
+<li>文件通常是大文件，而不是小文件，比如 GB 在这属于大文件，KB 级别属于小文件</li>
+<li>大部分文件通过 append新数据的方式实现修改，而不是直接重写现有数据</li>
+<li>同时设计应用程序和文件系统API便于提高整个系统的灵活性</li>
+</ol>
+<h2 id="系统假设"><a href="#系统假设" class="headerlink" title="系统假设"></a>系统假设</h2><ul>
+<li>分布系统的各个组件是廉价的商品主机，而不是专业服务器，因此它们不得不频繁地自我监测、发现故障，并被要求有一定故障容错与自我故障恢复能力</li>
+<li>文件数量处于几百万的规模，每一个文件的大小通常为 100 MB 或者更大，GB 也是很常见的数据大小；文件系统虽然支持小文件，但是不会进行特殊的优化（因此直接使用 GFS 应当基于大文件的应用背景）</li>
+<li><strong>读工作负载</strong>主要由两种读方式构成：large streaming reads and small random reads.小规模的随机读取通常会在文件的某个任意偏移位置读几KB。性能敏感的应用程序通常会对小规模的随机读进行batch和sort处理，减少磁盘的来回读取</li>
+<li><strong>写工作负载</strong>主要是大规模的、连续（即串行的）的写操作，这些操作将数据追加到文件末尾。写操作的规模通常和大规模串行读的规模类似。系统同样支持小规模随机写入，但不会做太多优化</li>
+<li>系统需要支持并发写，即支持数百台机器并发地追加数据到一个文件。操作的原子性和同步开销是主要指标；</li>
+<li><strong>高持续带宽（High sustained bandwidth）比低延迟更重要</strong></li>
+</ul>
+<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>一个 GFS cluster（集群）分为两个组件：</p>
+<ul>
+<li><strong>单个</strong> master 节点；</li>
+<li><strong>多个</strong> chunkserver 节点；</li>
+</ul>
+<p>一个 GFS 集群同时可以被多个 client（客户）节点访问。</p>
+<p>一个 GFS 集群的架构可以用下图表示：</p>
+<p><img src="/1.png" alt="GFS Architecture"></p>
+<p>可见 GFS 集群是一个典型 Master + Worker 结构。Master 来管理任务、分配任务，而 Worker 进行数据的存储和读取。</p>
+<h3 id="分块存储"><a href="#分块存储" class="headerlink" title="分块存储"></a>分块存储</h3><p>分块可以进行并行操作，提升系统读写速度。<strong>GFS 以 64 MB 为固定的 Chunk Size 大小。</strong>远远大于典型的单机文件系统chunk的大小。分布式系统由于不可避免的故障，因此我们需要使用 replication 机制，每一个 chunk 都存在着若干个副本（它们不一定完全一样 ，因为 GFS 并不是一个强一致性文件管理系统），我们称这些 chunk 的副本为 replicas。每个 chunk 或者 replica 都作为普通的 Linux 文件存储在 chunkserver 上。</p>
+<p>文件分块存储也引入了额外的复杂性：原本通过 file name 就能够定位文件，现在文件分为多个 chunk，每一个 chunk 甚至设计 replica，因此需要额外的信息和管理机制来确保文件分块存储的可行性；GFS 中每一个 chunk 会使用一个不可变的全局唯一（globally unique）64 位 chunk handle identity，这个标识由 Master 节点在 chunk 被创建时进行分配。</p>
+<h3 id="master"><a href="#master" class="headerlink" title="master"></a>master</h3><p>Master 周期性通过 HeartBeat 机制和每一个 chunkserver 进行通信，进行指令的发送以及状态信息的接收</p>
+<p>Master 节点<strong>在内存中存储</strong>着两个 Table，它们被统称为 metadata，它们存储的内容如下：</p>
+<ul>
+<li>Table 1：<ul>
+<li>key：file name</li>
+<li>value：<strong>an array of</strong> chunk handler (nv)</li>
+</ul>
+</li>
+<li>Table 2：<ul>
+<li>key：chunk handler</li>
+<li>value：<ul>
+<li><strong>a list of</strong> chunkserver(v)</li>
+<li>chunk version number(nv)</li>
+<li>which chunkserver is primary node(which means others are nomal chunkserver in the list)(v)</li>
+<li>lease expiration time(v)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="client-读取"><a href="#client-读取" class="headerlink" title="client 读取"></a>client 读取</h3><ul>
+<li>GFS Client 首先根据读取的 offset 在 chunk size 固定的背景下计算出 chunk index</li>
+<li>给 GFS Master 发送 file name 以及 chunk index</li>
+<li>GFS Master 接收到查询请求后，将 filename 以及 chunk index 映射为 chunk handle 以及 chunk locations，并返回给 GFS Client</li>
+<li>GFS Client 接收到响应后以 key 为 file name + chunk index，value 为 chunk handle + chunk locations 的键值对形式缓存此次查询信息</li>
+<li>接着，GFS Client 向其中一个 replicas (最有可能是最近的副本)发送请求，去请求中指定 chunk handle 以及块中的字节范围</li>
+</ul>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p><strong>为什么设计这么大的chunk？</strong></p>
+<ul>
+<li>首先，它减少了 Client 与 Master 服务器交互的次数，因为对同一块进行多次读写仅仅需要向 Master 服务器发出一次初始请求，就能获取该chunk的所有位置信息。这可以有效地减少 Master 的工作负载。Client 在向 Master 索要 metadata 的部分数据之后，会对这部分数据进行超时的缓存，如果缓存未过期并且还是读写此块 chunk，那么 Client 就不需要向 Master 发出查询 metadata 的请求，直接使用缓存数据即可。如果chunk太小，一次读写可能会进行多次查询。</li>
+<li>其次，减少了 GFS Client 与 GFS chunkserver 进行交互的数据开销，这是因为数据的读取具有连续读取的倾向，即读到 offset 的字节数据后，下一次读取有较大的概率读紧挨着 offset 数据的后续数据，chunk 的大尺寸相当于提供了一层缓存，减少了网络 I&#x2F;O 的开销</li>
+<li>第三，它减少了存储在主服务器上的元数据的大小。这允许我们将元数据保存在内存中。</li>
+<li>不过大chunk也有局限性，小数据量（比如仅仅占据一个 chunk 的文件，文件至少占据一个 chunk）的文件很多时，当很多 GFS Client 同时将 record 存储到该文件时就会造成局部的 hot spots 热点。不过GFS的应用场景是大文件</li>
+</ul>
+<p><strong>单master故障了怎么办？</strong></p>
+<p>Master 提供 shadow Master 节点，这些节点在 Master 宕机时还能提供对文件系统的<strong>只读</strong>访问，但是注意，这里用词为 “shadow” 而不是 “mirror”，前者允许 shadow Master 的状态略微滞后于 Master 节点（通常延迟限制于几分之一秒内），后者要求必须保持一致。GFS 使用 shadow Master 节点在客户端不在意读到陈旧内容时能够很好的服务。不过大多数修改都是 append，因此客户端至多读不到新 append 的数据，而大概率不会读到错误的旧数据。</p>
+<p>shadow Master 节点通过读取 Master 日志系统的 replicas 来进行状态的更新，然后根据日志的先后顺序执行操作，但是注意 shadow Master 节点并不参与和其他 chunkserver 进行通信，比如并不存在心跳机制。</p>
+<p><strong>GFS设计为每个 chunk 都有两个replicas，对这三个chunk，如何保持一致性呢？</strong></p>
+<p>对于 chunk 的写操作涉及两种修改：</p>
+<ul>
+<li>在相关 chunkserver 上进行 I&#x2F;O 写操作</li>
+<li>在 Master 节点上修改 metadata</li>
+</ul>
+<p>系统通过lease机制来确保在 chunk server 的写入顺序：Master 节点将一个 lease 发给写操作涉及的三个 chunkserver 中的任意一个节点，此节点被称为 primary 节点，而其他两个节点被称为 secondaries(从属节点)。只有 primary 节点有权进行直接写入，且以其写入的顺序为准。</p>
+<p>这种 Lease 机制减少了 Master 的管理开销，同时也确保了线程安全性，因为执行顺序不再由 Master 去决定，而是由拥有具体 lease 的 chunkserver 节点决定。租赁的默认占用超时时间为 60s，但是如果 Master 又接收到对同一个 chunk 的写操作，那么可以延长当前 primary 节点的剩余租赁时间。</p>
+<ul>
+<li>Step1：客户端向 Master 节点查询哪一个 Chunk Server 持有要进行写操作的 Chunk 的 Lease；</li>
+<li>Step2：Master 节点回应 primary 节点的标识符（包括地址）以及其他 replicas 节点的地址。客户端接收后将此回应进行缓存，其会在 primary 节点不可达或者其不再持有 lease 时再次向 Master 查询；</li>
+<li>Step3：客户端向所有的 replicas 都推送数据，注意此时客户端可以依靠任意顺序进行推送数据，并没有要求此时必须先给 primary 推送数据。所有的 chunkserver(replicas) 都会将推送来的数据存放在内置的 LRU buffer cacahe，缓存中的数据直到被使用或者超时才会被释放。</li>
+<li>Step4：只要 replicas 回复已经接收到了所有数据，那么 Client 就会发送一个 write 指令给 primary 节点，primary 节点为多个写操作计划执行的序号（写操作可能来自于多个 Client），然后将此顺序应用于其本地 I&#x2F;O 写操作。</li>
+<li>Step5：primary 节点将写操作请求转发给其他两个 replica，它们都将按照 primary 的顺序执行本地的 I&#x2F;O 写操作；</li>
+<li>Step6：secondaries 从节点返回写成功的响应给 primary 节点；（secondaries节点写入失败，primary的数据依然会存在）</li>
+<li>Step7：Primary 响应客户端，并返回该过程中发生的错误。注意，这里的错误不仅仅是 Primary 节点的写操作错误，还包括其他两个 replica 节点的写操作错误。如果 primary 自身发生错误，其就不会向其他两个 replica 节点进行转发。另一方面，如果 Client 收到写失败响应，那么其会重新进行写操作尝试，即重新开始 3-7 步。</li>
+</ul>
+<p><strong>master如何选择primary节点？</strong></p>
+<ul>
+<li>Master 节点在接受到修改请求时，会找此 file 文件最后一个 chunk 的 up-to-date 版本（最新版本），最新版本号应当等于 Master 节点维护的版本号。chunk 使用一个 chunk version 进行版本管理（分布式环境下普遍使用版本号进行管理，比如 Lamport 逻辑时钟）。一个修改涉及 3 个 chunk 的修改，如果某一个 chunk 因为网络原因没能够修改成功，那么其 chunk version 就会落后于其他两个 chunk，此 chunk 会被认为是过时的。Master通过心跳获取各个 chunkserver 拥有的 chunk 和其 chunk version</li>
+<li>Master 在选择好 primary 节点后递增当前 chunk 的 chunk version，并通知 Primary，得到确切回复后再本地持久化</li>
+<li>通过 Primary 与其他 chunkserver，发送修改此 chunk 的版本号的通知，而节点接收到此通知后会修改版本号，然后持久化</li>
+<li>Primary 然后开始选择 file 最后一个文件的 chunk 的末尾 offset 开始写入数据，写入后将此消息转发给其他 chunkserver，它们也对相同的 chunk 在 offset 处写入数据</li>
+</ul>
+<h2 id="相关资料"><a href="#相关资料" class="headerlink" title="相关资料"></a>相关资料</h2><p>更多内容请参考：</p>
+<p><a href="https://spongecaptain.cool/post/paper/googlefilesystem/">一篇很详细的博客</a></p>
+<p><a href="https://storage.googleapis.com/pub-tools-public-publication-data/pdf/035fc972c796d33122033a0614bc94cff1527999.pdf">The Google File System 论文</a></p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+</search>
