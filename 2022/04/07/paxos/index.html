@@ -101,14 +101,14 @@
 <meta property="og:site_name" content="星宿长安">
 <meta property="og:description" content="在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://la4am12.github.io/1.png">
-<meta property="og:image" content="https://la4am12.github.io/2.png">
+<meta property="og:image" content="https://la4am12.github.io/2022/04/07/paxos/1.png">
+<meta property="og:image" content="https://la4am12.github.io/2022/04/07/paxos/2.png">
 <meta property="article:published_time" content="2022-04-07T02:58:30.000Z">
-<meta property="article:modified_time" content="2022-10-10T03:34:22.751Z">
+<meta property="article:modified_time" content="2022-10-10T09:42:29.554Z">
 <meta property="article:author" content="La4am12">
 <meta property="article:tag" content="分布式">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://la4am12.github.io/1.png">
+<meta name="twitter:image" content="https://la4am12.github.io/2022/04/07/paxos/1.png">
 
 
 
@@ -412,7 +412,7 @@
         <p>在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner</p>
 <span id="more"></span>
 
-<p><img src="/1.png" alt="算法流程"></p>
+<p><img src="/2022/04/07/paxos/1.png" alt="算法流程"></p>
 <h2 id="Prepare阶段"><a href="#Prepare阶段" class="headerlink" title="Prepare阶段"></a>Prepare阶段</h2><p>Proposer 选择一个新的提案编号Mn（所有的编号是全序的），然后 Acceptor 的某个超过半数的子集成员发送编号为 Mn 的 Prepare 请求，要求该集合中的 Acceptor 做出如下回应：</p>
 <ul>
 <li>向 Proposer 承诺，保证不再批准任何编号小于 Mn 的提案</li>
@@ -434,7 +434,7 @@
 <p>任意两个半数以上的集合，必定包含至少一个公共元素，简单来说，就说不会形成一个孤岛，独自通过一个议案</p>
 <p><strong>算法一定有效吗？</strong></p>
 <p>Basic Paxos 算法很大程度上保证了有效性，但依然会存在这样一种可能：</p>
-<p><img src="/2.png" alt="活锁"></p>
+<p><img src="/2022/04/07/paxos/2.png" alt="活锁"></p>
 <p>两个 Proposer 交替 Prepare 成功，而 Accept 失败，形成活锁（Livelock）。</p>
 <p>为了这种情况，就必须选择一个主 Proposer，并规定只有主 Proposer 才能提出议案，这样没有 Proposer 竞争，解决了活锁问题。在系统中仅有一个 Proposer 进行 Value 提交的情况下，Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。</p>
 <p>选取一个主 Proposer 也是一次决议的过程，可以通过 Basic paxos 算法选取。</p>

@@ -1,45 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Paxos算法介绍</title>
-    <url>/2022/04/07/paxos/</url>
-    <content><![CDATA[<p>在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner</p>
-<span id="more"></span>
-
-<p><img src="/1.png" alt="算法流程"></p>
-<h2 id="Prepare阶段"><a href="#Prepare阶段" class="headerlink" title="Prepare阶段"></a>Prepare阶段</h2><p>Proposer 选择一个新的提案编号Mn（所有的编号是全序的），然后 Acceptor 的某个超过半数的子集成员发送编号为 Mn 的 Prepare 请求，要求该集合中的 Acceptor 做出如下回应：</p>
-<ul>
-<li>向 Proposer 承诺，保证不再批准任何编号小于 Mn 的提案</li>
-<li>如果 Acceptor 已经批准过任何提案，那么其就向 Proposer 反馈当前该 Acceptor 已经批准的编号的提案的值</li>
-</ul>
-<p>每个 Acceptor只需要记住它已经做出 Prepare 请求响应的提案的最大编号或者已经批准的提案的最大编号和值，以便在出现故障或者节点重启的情况下，也能保证P2c的不变性。</p>
-<p>对于 Proposer 来说，只要它可以保证不会产生具有相同编号的提案，那么就可以丢弃任意的提案以及它的所有运行时状态信息。</p>
-<h2 id="Accept阶段"><a href="#Accept阶段" class="headerlink" title="Accept阶段"></a>Accept阶段</h2><p>如果 Proposer 收到来自半数以上的 Acceptor 对于其发出的编号为 Mn 的 Prepare 请求的响应，那么它就会发送一个针对【Mn，Vn】提案的 Accept 请求给 Acceptor。</p>
-<p>如果 Acceptor 收到这个针对【Mn，Vn】提案的 Accept 请求，只要该 Acceptor 尚未对编号大于 Mn 的 Prepare 请求做出过保证，它就可以通过这个提案</p>
-<h2 id="提案获取"><a href="#提案获取" class="headerlink" title="提案获取"></a>提案获取</h2><p>让 Learn 获取到已经被半数以上的 Acceptor 批准的提案：</p>
-<ul>
-<li>一个简单的做法是，一旦 Acceptor 批准了一个提案，就将该提案发送给所有的 Learner。这种做法可以让 Learner 尽快地获取被选定的提案，但是需要让每个 Acceptor 与所有的 Learner 逐个进行一次通信…</li>
-<li>另一种可行方案是，将结果发送给主 Learner，通过 Learner之间的通信来互相感知提案的选定，这种方案减少了通信次数，但会存在单点故障的问题</li>
-<li>一个折中的方案是，Acceptor 将批准的提案发送给一个特定的 Learner 集合，集合中 Learner 的个数越多，可靠性越好，但同时网络通信的复杂度越高</li>
-</ul>
-<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p><strong>我们的目的是选取一个最终的一致性值 V，为什么需要引入提案编号 M 进行辅助呢？</strong></p>
-<p>如果不使用编号，Acceptor 在接受到提案后就进行批准的情况下，没办法选出大多数。因此引入一个全局唯一的序号进行关联，且生成的编号是全序的，不过编号不再算法的考虑之内。</p>
-<p><strong>为什么算法要求至少保证 Prepare 请求和 Accept 请求都发送给半数以上的 Acceptor 子集？</strong></p>
-<p>任意两个半数以上的集合，必定包含至少一个公共元素，简单来说，就说不会形成一个孤岛，独自通过一个议案</p>
-<p><strong>算法一定有效吗？</strong></p>
-<p>Basic Paxos 算法很大程度上保证了有效性，但依然会存在这样一种可能：</p>
-<p><img src="/2.png" alt="活锁"></p>
-<p>两个 Proposer 交替 Prepare 成功，而 Accept 失败，形成活锁（Livelock）。</p>
-<p>为了这种情况，就必须选择一个主 Proposer，并规定只有主 Proposer 才能提出议案，这样没有 Proposer 竞争，解决了活锁问题。在系统中仅有一个 Proposer 进行 Value 提交的情况下，Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。</p>
-<p>选取一个主 Proposer 也是一次决议的过程，可以通过 Basic paxos 算法选取。</p>
-<p><strong>选取主 Proposer 不是也会出现上述问题吗？</strong></p>
-<p>我的理解是，选取主 Proposer 的过程可以看作是算法 init 的阶段，失败了重试就可以了，并不会对数据造成影响，只要保证后续的可持续性就OK</p>
-]]></content>
-      <tags>
-        <tag>分布式</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>MapReduce论文阅读</title>
     <url>/2022/04/01/MapReduce/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>对于大数据量任务的处理，要想在可接受的时间内完成运算，只有将这些计算分布在成百上千的主机上。如何处理并行计算、如何分发数据、如何处理错误？所有这些问题综合在一起，需要大量的代码处理，因此也使得原本简单的运算变得难以处理。</p>
@@ -50,7 +11,7 @@
 <li>Map, takes an input pair and produces a set of intermediate key&#x2F;value pairs. The MapReduce library groups together all intermediate values associated with the same intermediate key I and passes them to the Reduce function</li>
 <li>The Reduce function, accepts an intermediate key I and a set of values for that key. It merges together these values to form a possibly smaller set of values. Typically just zero or one output value is produced per Reduce invocation. The intermediate values are supplied to the user’s reduce function via an iterator. This allows us to handle lists of values that are too large to fit in memory</li>
 </ul>
-<h2 id="Execution-Overview"><a href="#Execution-Overview" class="headerlink" title="Execution Overview"></a>Execution Overview</h2><p><img src="/1.png" alt="Execution Overview"></p>
+<h2 id="Execution-Overview"><a href="#Execution-Overview" class="headerlink" title="Execution Overview"></a>Execution Overview</h2><p><img src="/2022/04/01/MapReduce/1.png" alt="Execution Overview"></p>
 <ol>
 <li>用户程序首先调用的 MapReduce 库将输入文件分成 M 个数据片段，每个数据片段的大小一般从 16MB 到 64MB（可以通过可选的参数来控制每个数据片段的大小）。然后用户程序在机群中创建大量的程序副本。</li>
 <li>这些程序副本中的有一个特殊的程序–-master。副本中其它的程序都是 worker 程序，由 master 分配任务。有 M 个 Map 任务和 R 个 Reduce 任务将被分配，master 将一个 Map 任务或 Reduce 任务分配给一个空闲的 worker。</li>
@@ -128,7 +89,7 @@
 </ul>
 <p>一个 GFS 集群同时可以被多个 client（客户）节点访问。</p>
 <p>一个 GFS 集群的架构可以用下图表示：</p>
-<p><img src="/1.png" alt="GFS Architecture"></p>
+<p><img src="/2022/04/03/GFS/1.png" alt="GFS Architecture"></p>
 <p>可见 GFS 集群是一个典型 Master + Worker 结构。Master 来管理任务、分配任务，而 Worker 进行数据的存储和读取。</p>
 <h3 id="分块存储"><a href="#分块存储" class="headerlink" title="分块存储"></a>分块存储</h3><p>分块可以进行并行操作，提升系统读写速度。<strong>GFS 以 64 MB 为固定的 Chunk Size 大小。</strong>远远大于典型的单机文件系统chunk的大小。分布式系统由于不可避免的故障，因此我们需要使用 replication 机制，每一个 chunk 都存在着若干个副本（它们不一定完全一样 ，因为 GFS 并不是一个强一致性文件管理系统），我们称这些 chunk 的副本为 replicas。每个 chunk 或者 replica 都作为普通的 Linux 文件存储在 chunkserver 上。</p>
 <p>文件分块存储也引入了额外的复杂性：原本通过 file name 就能够定位文件，现在文件分为多个 chunk，每一个 chunk 甚至设计 replica，因此需要额外的信息和管理机制来确保文件分块存储的可行性；GFS 中每一个 chunk 会使用一个不可变的全局唯一（globally unique）64 位 chunk handle identity，这个标识由 Master 节点在 chunk 被创建时进行分配。</p>
@@ -196,6 +157,45 @@
 <h2 id="相关资料"><a href="#相关资料" class="headerlink" title="相关资料"></a>相关资料</h2><p>更多内容请参考：</p>
 <p><a href="https://spongecaptain.cool/post/paper/googlefilesystem/">一篇很详细的博客</a></p>
 <p><a href="https://storage.googleapis.com/pub-tools-public-publication-data/pdf/035fc972c796d33122033a0614bc94cff1527999.pdf">The Google File System 论文</a></p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Paxos算法介绍</title>
+    <url>/2022/04/07/paxos/</url>
+    <content><![CDATA[<p>在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner</p>
+<span id="more"></span>
+
+<p><img src="/2022/04/07/paxos/1.png" alt="算法流程"></p>
+<h2 id="Prepare阶段"><a href="#Prepare阶段" class="headerlink" title="Prepare阶段"></a>Prepare阶段</h2><p>Proposer 选择一个新的提案编号Mn（所有的编号是全序的），然后 Acceptor 的某个超过半数的子集成员发送编号为 Mn 的 Prepare 请求，要求该集合中的 Acceptor 做出如下回应：</p>
+<ul>
+<li>向 Proposer 承诺，保证不再批准任何编号小于 Mn 的提案</li>
+<li>如果 Acceptor 已经批准过任何提案，那么其就向 Proposer 反馈当前该 Acceptor 已经批准的编号的提案的值</li>
+</ul>
+<p>每个 Acceptor只需要记住它已经做出 Prepare 请求响应的提案的最大编号或者已经批准的提案的最大编号和值，以便在出现故障或者节点重启的情况下，也能保证P2c的不变性。</p>
+<p>对于 Proposer 来说，只要它可以保证不会产生具有相同编号的提案，那么就可以丢弃任意的提案以及它的所有运行时状态信息。</p>
+<h2 id="Accept阶段"><a href="#Accept阶段" class="headerlink" title="Accept阶段"></a>Accept阶段</h2><p>如果 Proposer 收到来自半数以上的 Acceptor 对于其发出的编号为 Mn 的 Prepare 请求的响应，那么它就会发送一个针对【Mn，Vn】提案的 Accept 请求给 Acceptor。</p>
+<p>如果 Acceptor 收到这个针对【Mn，Vn】提案的 Accept 请求，只要该 Acceptor 尚未对编号大于 Mn 的 Prepare 请求做出过保证，它就可以通过这个提案</p>
+<h2 id="提案获取"><a href="#提案获取" class="headerlink" title="提案获取"></a>提案获取</h2><p>让 Learn 获取到已经被半数以上的 Acceptor 批准的提案：</p>
+<ul>
+<li>一个简单的做法是，一旦 Acceptor 批准了一个提案，就将该提案发送给所有的 Learner。这种做法可以让 Learner 尽快地获取被选定的提案，但是需要让每个 Acceptor 与所有的 Learner 逐个进行一次通信…</li>
+<li>另一种可行方案是，将结果发送给主 Learner，通过 Learner之间的通信来互相感知提案的选定，这种方案减少了通信次数，但会存在单点故障的问题</li>
+<li>一个折中的方案是，Acceptor 将批准的提案发送给一个特定的 Learner 集合，集合中 Learner 的个数越多，可靠性越好，但同时网络通信的复杂度越高</li>
+</ul>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p><strong>我们的目的是选取一个最终的一致性值 V，为什么需要引入提案编号 M 进行辅助呢？</strong></p>
+<p>如果不使用编号，Acceptor 在接受到提案后就进行批准的情况下，没办法选出大多数。因此引入一个全局唯一的序号进行关联，且生成的编号是全序的，不过编号不再算法的考虑之内。</p>
+<p><strong>为什么算法要求至少保证 Prepare 请求和 Accept 请求都发送给半数以上的 Acceptor 子集？</strong></p>
+<p>任意两个半数以上的集合，必定包含至少一个公共元素，简单来说，就说不会形成一个孤岛，独自通过一个议案</p>
+<p><strong>算法一定有效吗？</strong></p>
+<p>Basic Paxos 算法很大程度上保证了有效性，但依然会存在这样一种可能：</p>
+<p><img src="/2022/04/07/paxos/2.png" alt="活锁"></p>
+<p>两个 Proposer 交替 Prepare 成功，而 Accept 失败，形成活锁（Livelock）。</p>
+<p>为了这种情况，就必须选择一个主 Proposer，并规定只有主 Proposer 才能提出议案，这样没有 Proposer 竞争，解决了活锁问题。在系统中仅有一个 Proposer 进行 Value 提交的情况下，Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。</p>
+<p>选取一个主 Proposer 也是一次决议的过程，可以通过 Basic paxos 算法选取。</p>
+<p><strong>选取主 Proposer 不是也会出现上述问题吗？</strong></p>
+<p>我的理解是，选取主 Proposer 的过程可以看作是算法 init 的阶段，失败了重试就可以了，并不会对数据造成影响，只要保证后续的可持续性就OK</p>
 ]]></content>
       <tags>
         <tag>分布式</tag>
