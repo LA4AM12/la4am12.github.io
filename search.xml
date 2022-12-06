@@ -241,4 +241,211 @@
         <tag>算法</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Vim Memo List</title>
+    <url>/2022/12/06/Vim%20Memo%20List/</url>
+    <content><![CDATA[<h2 id="Normal"><a href="#Normal" class="headerlink" title="Normal"></a>Normal</h2><span id="more"></span>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G</td>
+<td>移动到文件最后一行</td>
+</tr>
+<tr>
+<td>gg</td>
+<td>移动到文件第一行</td>
+</tr>
+<tr>
+<td>n+Enter</td>
+<td>向下移动 n 行</td>
+</tr>
+<tr>
+<td>&#x2F;word</td>
+<td>向光标之下寻找一个名称为 word 的字串</td>
+</tr>
+<tr>
+<td>n</td>
+<td>重复前一个搜寻的动作</td>
+</tr>
+<tr>
+<td>N</td>
+<td>反向”进行前一个搜寻动作</td>
+</tr>
+<tr>
+<td>:n1,n2s&#x2F;word1&#x2F;word2&#x2F;g</td>
+<td>n1 与 n2 为数字。在第 n1 与 n2 列之间寻找word1 这个字串，并将该字串取代为 word2</td>
+</tr>
+<tr>
+<td>:1,$s&#x2F;word1&#x2F;word2&#x2F;g</td>
+<td>从第一列到最后一列寻找 word1 字串，并将该字串取代为 word2</td>
+</tr>
+<tr>
+<td>:1,$s&#x2F;word1&#x2F;word2&#x2F;gc</td>
+<td>在取代前显示提示字符给使用者确认 （confirm） 是否需要取代</td>
+</tr>
+<tr>
+<td>(n) x, X</td>
+<td>向后，前删除一(n)个字符</td>
+</tr>
+<tr>
+<td>(n)dd</td>
+<td>删除光标所在的那一(n)整行</td>
+</tr>
+<tr>
+<td>(n)yy</td>
+<td>复制光标所在的那一行</td>
+</tr>
+<tr>
+<td>p, P</td>
+<td>p 为将已复制的数据在光标下一行贴上，P 则为贴在光标上一行</td>
+</tr>
+<tr>
+<td>u</td>
+<td>复原前一个动作</td>
+</tr>
+<tr>
+<td>[Ctrl]+r</td>
+<td>重做上一个动作</td>
+</tr>
+<tr>
+<td>.</td>
+<td>重复前一个动作</td>
+</tr>
+<tr>
+<td>:w [filename]</td>
+<td>将编辑的数据储存成另一个文件</td>
+</tr>
+<tr>
+<td>:r [filename]</td>
+<td>将“filename” 这个文件内容加到光标所在列后面</td>
+</tr>
+<tr>
+<td>:! command</td>
+<td>暂时离开 vi 到命令行界面下执行 command 的显示结果</td>
+</tr>
+<tr>
+<td>:set nu</td>
+<td>显示行号</td>
+</tr>
+<tr>
+<td>:set nonu</td>
+<td>取消行号</td>
+</tr>
+</tbody></table>
+<h2 id="Visual"><a href="#Visual" class="headerlink" title="Visual"></a>Visual</h2><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v</td>
+<td>字符选择，会将光标经过的地方反白选择！</td>
+</tr>
+<tr>
+<td>V</td>
+<td>列选择，会将光标经过的列反白选择！</td>
+</tr>
+<tr>
+<td>[Ctrl]+v</td>
+<td>区块选择，可以用长方形的方式选择数据</td>
+</tr>
+<tr>
+<td>y</td>
+<td>将反白的地方复制起来</td>
+</tr>
+<tr>
+<td>d</td>
+<td>将反白的地方删除掉</td>
+</tr>
+<tr>
+<td>p</td>
+<td>将刚刚复制的区块，在光标所在处贴上！</td>
+</tr>
+</tbody></table>
+<p>可以使用 vim 后面同时接好几个文件来同时打开</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>:n</td>
+<td>编辑下一个文件</td>
+</tr>
+<tr>
+<td>:N</td>
+<td>编辑上一个文件</td>
+</tr>
+<tr>
+<td>:files</td>
+<td>列出目前打开的所有文件</td>
+</tr>
+</tbody></table>
+<h2 id="多窗口"><a href="#多窗口" class="headerlink" title="多窗口"></a>多窗口</h2><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>:sp [filename]</td>
+<td>打开一个新窗口，如果有加 filename， 表示在新窗口打开一个新文件，否则表示两个窗口为同一个文件内容（同步显示）。</td>
+</tr>
+<tr>
+<td>[ctrl]+w  then ↑↓</td>
+<td>光标移动到上（下）面的窗口</td>
+</tr>
+<tr>
+<td>[ctrl]+w+q</td>
+<td>结束当前窗口</td>
+</tr>
+</tbody></table>
+<h2 id="vscode"><a href="#vscode" class="headerlink" title="vscode"></a>vscode</h2><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Keybinding</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Focus editor group</td>
+<td>Ctrl + 数字</td>
+</tr>
+<tr>
+<td>Toggle Terminal</td>
+<td>Ctrl + &#96;</td>
+</tr>
+<tr>
+<td>Go to File</td>
+<td>Ctrl + p</td>
+</tr>
+<tr>
+<td>split window</td>
+<td>Ctrl + \</td>
+</tr>
+<tr>
+<td>聚焦到工作目录</td>
+<td>Ctrl+Shift+e</td>
+</tr>
+<tr>
+<td>切换窗口</td>
+<td>Ctrl + Tab 或者 Alt + 数字</td>
+</tr>
+</tbody></table>
+]]></content>
+      <tags>
+        <tag>Vim</tag>
+        <tag>VSCode</tag>
+      </tags>
+  </entry>
 </search>
