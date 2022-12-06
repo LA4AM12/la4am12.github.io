@@ -165,83 +165,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Bitcoin: A Peer-to-Peer Electronic Cash System</title>
-    <url>/2022/11/22/bitcoin/</url>
-    <content><![CDATA[<h2 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h2><p>A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution.</p>
-<p>We propose a solution to the double-spending problem using a peer-to-peer network.</p>
-<span id="more"></span>
-<p>The network timestamps transactions by hashing them into an ongoing chain of hash-based proof-of-work, forming a record that cannot be changed without redoing the proof-of-work.</p>
-<p>As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they’ll generate the longest chain and outpace attackers.</p>
-<h2 id="Transactions"><a href="#Transactions" class="headerlink" title="Transactions"></a>Transactions</h2><p>Each owner transfers the coin to the next by digitally signing a hash of the previous transaction and the public key of the next owner and adding these to the end of the coin.<br>![[Pasted image 20221127095835.png]]</p>
-<p>Problem &#x2F; Solving</p>
-<ul>
-<li>outright forgery  （signing ）</li>
-<li>double spending （public log）</li>
-<li>theft</li>
-</ul>
-<p>The problem of course is the payee can’t verify that one of the owners did not double-spend the coin.<br>A transaction does not take effect when it is written to a block by a miner, but only after the chain has actually become the longest chain on the chain before the transaction is considered truly irreversible. This is why it is recommended to wait for six confirmations after each transfer. Each new block added by the exchange after the block is a confirmation, and after waiting for six confirmations, most miners recognize the chain as the longest chain and the transaction will be irreversible.</p>
-<p>Since it is not possible to apply a consensus algorithm like raft, which makes decisions based on the majority, to a decentralized system.</p>
-<h2 id="Proof-of-Work"><a href="#Proof-of-Work" class="headerlink" title="Proof-of-Work"></a>Proof-of-Work</h2><p>The proof-of-work involves scanning for a value that when hashed, such as with SHA-256, the hash begins with a number of zero bits. The average work required is exponential in the number of zero bits required and can be verified by executing a single hash.</p>
-<p>there is a mount of work a node needs to do to acturally be able to extend the log</p>
-<ul>
-<li>winner in Pow decides on next log entry</li>
-<li>hard to impersonate winner</li>
-</ul>
-<p>![[Pasted image 20221126161828.png]]</p>
-<h2 id="forks"><a href="#forks" class="headerlink" title="forks"></a>forks</h2><p>if</p>
-<ol>
-<li>find nonce at same time </li>
-<li>slow network<br>rule: peer switches to longest fork</li>
-</ol>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>比特币白皮书（Bitcoin: A Peer-to-Peer Electronic Cash System）</p>
-]]></content>
-      <tags>
-        <tag>分布式</tag>
-        <tag>区块链</tag>
-        <tag>比特币</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Paxos算法介绍</title>
-    <url>/2022/04/07/paxos/</url>
-    <content><![CDATA[<p>在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner</p>
-<span id="more"></span>
-
-<p><img src="/2022/04/07/paxos/1.png" alt="算法流程"></p>
-<h2 id="Prepare阶段"><a href="#Prepare阶段" class="headerlink" title="Prepare阶段"></a>Prepare阶段</h2><p>Proposer 选择一个新的提案编号Mn（所有的编号是全序的），然后 Acceptor 的某个超过半数的子集成员发送编号为 Mn 的 Prepare 请求，要求该集合中的 Acceptor 做出如下回应：</p>
-<ul>
-<li>向 Proposer 承诺，保证不再批准任何编号小于 Mn 的提案</li>
-<li>如果 Acceptor 已经批准过任何提案，那么其就向 Proposer 反馈当前该 Acceptor 已经批准的编号的提案的值</li>
-</ul>
-<p>每个 Acceptor只需要记住它已经做出 Prepare 请求响应的提案的最大编号或者已经批准的提案的最大编号和值，以便在出现故障或者节点重启的情况下，也能保证P2c的不变性。</p>
-<p>对于 Proposer 来说，只要它可以保证不会产生具有相同编号的提案，那么就可以丢弃任意的提案以及它的所有运行时状态信息。</p>
-<h2 id="Accept阶段"><a href="#Accept阶段" class="headerlink" title="Accept阶段"></a>Accept阶段</h2><p>如果 Proposer 收到来自半数以上的 Acceptor 对于其发出的编号为 Mn 的 Prepare 请求的响应，那么它就会发送一个针对【Mn，Vn】提案的 Accept 请求给 Acceptor。</p>
-<p>如果 Acceptor 收到这个针对【Mn，Vn】提案的 Accept 请求，只要该 Acceptor 尚未对编号大于 Mn 的 Prepare 请求做出过保证，它就可以通过这个提案</p>
-<h2 id="提案获取"><a href="#提案获取" class="headerlink" title="提案获取"></a>提案获取</h2><p>让 Learn 获取到已经被半数以上的 Acceptor 批准的提案：</p>
-<ul>
-<li>一个简单的做法是，一旦 Acceptor 批准了一个提案，就将该提案发送给所有的 Learner。这种做法可以让 Learner 尽快地获取被选定的提案，但是需要让每个 Acceptor 与所有的 Learner 逐个进行一次通信…</li>
-<li>另一种可行方案是，将结果发送给主 Learner，通过 Learner之间的通信来互相感知提案的选定，这种方案减少了通信次数，但会存在单点故障的问题</li>
-<li>一个折中的方案是，Acceptor 将批准的提案发送给一个特定的 Learner 集合，集合中 Learner 的个数越多，可靠性越好，但同时网络通信的复杂度越高</li>
-</ul>
-<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p><strong>我们的目的是选取一个最终的一致性值 V，为什么需要引入提案编号 M 进行辅助呢？</strong></p>
-<p>如果不使用编号，Acceptor 在接受到提案后就进行批准的情况下，没办法选出大多数。因此引入一个全局唯一的序号进行关联，且生成的编号是全序的，不过编号不再算法的考虑之内。</p>
-<p><strong>为什么算法要求至少保证 Prepare 请求和 Accept 请求都发送给半数以上的 Acceptor 子集？</strong></p>
-<p>任意两个半数以上的集合，必定包含至少一个公共元素，简单来说，就说不会形成一个孤岛，独自通过一个议案</p>
-<p><strong>算法一定有效吗？</strong></p>
-<p>Basic Paxos 算法很大程度上保证了有效性，但依然会存在这样一种可能：</p>
-<p><img src="/2022/04/07/paxos/2.png" alt="活锁"></p>
-<p>两个 Proposer 交替 Prepare 成功，而 Accept 失败，形成活锁（Livelock）。</p>
-<p>为了这种情况，就必须选择一个主 Proposer，并规定只有主 Proposer 才能提出议案，这样没有 Proposer 竞争，解决了活锁问题。在系统中仅有一个 Proposer 进行 Value 提交的情况下，Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。</p>
-<p>选取一个主 Proposer 也是一次决议的过程，可以通过 Basic paxos 算法选取。</p>
-<p><strong>选取主 Proposer 不是也会出现上述问题吗？</strong></p>
-<p>我的理解是，选取主 Proposer 的过程可以看作是算法 init 的阶段，失败了重试就可以了，并不会对数据造成影响，只要保证后续的可持续性就OK</p>
-]]></content>
-      <tags>
-        <tag>分布式</tag>
-        <tag>算法</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Vim Memo List</title>
     <url>/2022/12/06/Vim%20Memo%20List/</url>
     <content><![CDATA[<h2 id="Normal"><a href="#Normal" class="headerlink" title="Normal"></a>Normal</h2><span id="more"></span>
@@ -446,6 +369,149 @@
       <tags>
         <tag>Vim</tag>
         <tag>VSCode</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Bitcoin: A Peer-to-Peer Electronic Cash System</title>
+    <url>/2022/11/22/bitcoin/</url>
+    <content><![CDATA[<h2 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h2><p>A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution.</p>
+<p>We propose a solution to the double-spending problem using a peer-to-peer network.</p>
+<span id="more"></span>
+<p>The network timestamps transactions by hashing them into an ongoing chain of hash-based proof-of-work, forming a record that cannot be changed without redoing the proof-of-work.</p>
+<p>As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they’ll generate the longest chain and outpace attackers.</p>
+<h2 id="Transactions"><a href="#Transactions" class="headerlink" title="Transactions"></a>Transactions</h2><p>Each owner transfers the coin to the next by digitally signing a hash of the previous transaction and the public key of the next owner and adding these to the end of the coin.<br><img src="/2022/11/22/bitcoin/pic1.png" alt="pic1"></p>
+<p>Problem &#x2F; Solving</p>
+<ul>
+<li>outright forgery  （signing ）</li>
+<li>double spending （public log）</li>
+<li>theft</li>
+</ul>
+<p>The problem of course is the payee can’t verify that one of the owners did not double-spend the coin.<br>A transaction does not take effect when it is written to a block by a miner, but only after the chain has actually become the longest chain on the chain before the transaction is considered truly irreversible. This is why it is recommended to wait for six confirmations after each transfer. Each new block added by the exchange after the block is a confirmation, and after waiting for six confirmations, most miners recognize the chain as the longest chain and the transaction will be irreversible.</p>
+<p>Since it is not possible to apply a consensus algorithm like raft, which makes decisions based on the majority, to a decentralized system.</p>
+<h2 id="Proof-of-Work"><a href="#Proof-of-Work" class="headerlink" title="Proof-of-Work"></a>Proof-of-Work</h2><p>The proof-of-work involves scanning for a value that when hashed, such as with SHA-256, the hash begins with a number of zero bits. The average work required is exponential in the number of zero bits required and can be verified by executing a single hash.</p>
+<p>there is a mount of work a node needs to do to acturally be able to extend the log</p>
+<ul>
+<li>winner in Pow decides on next log entry</li>
+<li>hard to impersonate winner</li>
+</ul>
+<p><img src="/2022/11/22/bitcoin/pic2.png" alt="pic2.png"></p>
+<h2 id="forks"><a href="#forks" class="headerlink" title="forks"></a>forks</h2><p>if</p>
+<ol>
+<li>find nonce at same time </li>
+<li>slow network<br>rule: peer switches to longest fork</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>比特币白皮书（Bitcoin: A Peer-to-Peer Electronic Cash System）</p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+        <tag>区块链</tag>
+        <tag>比特币</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Paxos算法介绍</title>
+    <url>/2022/04/07/paxos/</url>
+    <content><![CDATA[<p>在该一致性算法中，有三种参与角色，Proposer、Acceptor 和 Learner</p>
+<span id="more"></span>
+
+<p><img src="/2022/04/07/paxos/1.png" alt="算法流程"></p>
+<h2 id="Prepare阶段"><a href="#Prepare阶段" class="headerlink" title="Prepare阶段"></a>Prepare阶段</h2><p>Proposer 选择一个新的提案编号Mn（所有的编号是全序的），然后 Acceptor 的某个超过半数的子集成员发送编号为 Mn 的 Prepare 请求，要求该集合中的 Acceptor 做出如下回应：</p>
+<ul>
+<li>向 Proposer 承诺，保证不再批准任何编号小于 Mn 的提案</li>
+<li>如果 Acceptor 已经批准过任何提案，那么其就向 Proposer 反馈当前该 Acceptor 已经批准的编号的提案的值</li>
+</ul>
+<p>每个 Acceptor只需要记住它已经做出 Prepare 请求响应的提案的最大编号或者已经批准的提案的最大编号和值，以便在出现故障或者节点重启的情况下，也能保证P2c的不变性。</p>
+<p>对于 Proposer 来说，只要它可以保证不会产生具有相同编号的提案，那么就可以丢弃任意的提案以及它的所有运行时状态信息。</p>
+<h2 id="Accept阶段"><a href="#Accept阶段" class="headerlink" title="Accept阶段"></a>Accept阶段</h2><p>如果 Proposer 收到来自半数以上的 Acceptor 对于其发出的编号为 Mn 的 Prepare 请求的响应，那么它就会发送一个针对【Mn，Vn】提案的 Accept 请求给 Acceptor。</p>
+<p>如果 Acceptor 收到这个针对【Mn，Vn】提案的 Accept 请求，只要该 Acceptor 尚未对编号大于 Mn 的 Prepare 请求做出过保证，它就可以通过这个提案</p>
+<h2 id="提案获取"><a href="#提案获取" class="headerlink" title="提案获取"></a>提案获取</h2><p>让 Learn 获取到已经被半数以上的 Acceptor 批准的提案：</p>
+<ul>
+<li>一个简单的做法是，一旦 Acceptor 批准了一个提案，就将该提案发送给所有的 Learner。这种做法可以让 Learner 尽快地获取被选定的提案，但是需要让每个 Acceptor 与所有的 Learner 逐个进行一次通信…</li>
+<li>另一种可行方案是，将结果发送给主 Learner，通过 Learner之间的通信来互相感知提案的选定，这种方案减少了通信次数，但会存在单点故障的问题</li>
+<li>一个折中的方案是，Acceptor 将批准的提案发送给一个特定的 Learner 集合，集合中 Learner 的个数越多，可靠性越好，但同时网络通信的复杂度越高</li>
+</ul>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p><strong>我们的目的是选取一个最终的一致性值 V，为什么需要引入提案编号 M 进行辅助呢？</strong></p>
+<p>如果不使用编号，Acceptor 在接受到提案后就进行批准的情况下，没办法选出大多数。因此引入一个全局唯一的序号进行关联，且生成的编号是全序的，不过编号不再算法的考虑之内。</p>
+<p><strong>为什么算法要求至少保证 Prepare 请求和 Accept 请求都发送给半数以上的 Acceptor 子集？</strong></p>
+<p>任意两个半数以上的集合，必定包含至少一个公共元素，简单来说，就说不会形成一个孤岛，独自通过一个议案</p>
+<p><strong>算法一定有效吗？</strong></p>
+<p>Basic Paxos 算法很大程度上保证了有效性，但依然会存在这样一种可能：</p>
+<p><img src="/2022/04/07/paxos/2.png" alt="活锁"></p>
+<p>两个 Proposer 交替 Prepare 成功，而 Accept 失败，形成活锁（Livelock）。</p>
+<p>为了这种情况，就必须选择一个主 Proposer，并规定只有主 Proposer 才能提出议案，这样没有 Proposer 竞争，解决了活锁问题。在系统中仅有一个 Proposer 进行 Value 提交的情况下，Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。</p>
+<p>选取一个主 Proposer 也是一次决议的过程，可以通过 Basic paxos 算法选取。</p>
+<p><strong>选取主 Proposer 不是也会出现上述问题吗？</strong></p>
+<p>我的理解是，选取主 Proposer 的过程可以看作是算法 init 的阶段，失败了重试就可以了，并不会对数据造成影响，只要保证后续的可持续性就OK</p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+        <tag>算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>二进制炸弹</title>
+    <url>/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近上系统级编程的课，其中一个实验是破解二进制炸弹，下面记录一下解题思路。</p>
+<span id="more"></span>
+
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>由于老师提供了binarybomb移植版文件，包含：</p>
+<ul>
+<li>gdb.exe</li>
+<li>objdump.exe</li>
+</ul>
+<p>一个调试工具一个反汇编工具，但这是Windows的移植版。在Linux下使用对应的gdb和objdump即可</p>
+<h3 id="反汇编"><a href="#反汇编" class="headerlink" title="反汇编"></a>反汇编</h3><p>在bomb.exe文件下路径下，执行<strong>objdump -d bomb.exe</strong>，得到了程序的汇编代码。然后大致浏览了一下，发现其中有六个函数phase_1……phase_6，基本上也就可以确定就是这六个关卡了。</p>
+<h2 id="phase-1"><a href="#phase-1" class="headerlink" title="phase_1"></a>phase_1</h2><p><strong>知识点：string，函数调用，栈</strong></p>
+<p>找到phase_1对应的汇编代码，可以看到就那么10几行</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase1.png" alt="phase1"></p>
+<p>不难发现，其中一个call指令，调用了string_not_equal函数。可以猜测到应该就是<strong>比较我们输入的字符串密码和内置的密码是否相等</strong></p>
+<p>接下来使用gdb调试程序，这个函数前三行都是给函数分配栈空间，对实验没什么影响，我们在第四行设置一个断点，运行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">b *0x40184c  <span class="comment">#设置断点</span></span><br><span class="line">r     <span class="comment">#运行</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/r.png" alt="r"></p>
+<p>然后乱输入一个123456789进入，那么我们输入的字符串被放在哪里了呢？肯定是作为一个参数要传进字符串比较这个函数的，才可以进行比较。在调用这个函数之前，是把这个eax寄存器中的值传给了esp的，我们不妨查看一下eax中的值：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax.png" alt="eax"></p>
+<p>发现就是我们的输入，那要和哪个字符串进行比较呢？肯定也是最为参数传递进去了的，在第四行代码中，将一个地址的值放在了esp+4的位置，不出意外密码应该就是这个地址上的值了，接下来打印一下：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/1%E5%AF%86%E7%A0%81.png" alt="1密码"></p>
+<p>密码就是<code>Public speaking is very easy.</code>.&#x2F;BinaryBomb<br>接下来重新运行程序，输入密码就进入了第二关：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2.png" alt="phase2"></p>
+<h2 id="phase-2"><a href="#phase-2" class="headerlink" title="phase_2"></a>phase_2</h2><p><strong>知识点：循环</strong></p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2as.png" alt="phase2as"></p>
+<p>首先，大致看一下汇编代码，可以很显然的看到箭头处调用了一个函数：<strong>read_six_numbers</strong>。说明第二关是要输入6个数字。在调用了这个函数之后，把ebp-0x24中的值赋给eax寄存器，如果不等于1，则爆炸！那么我们可以猜测第一个数字就应该是1，为了验证这个想法我们在这一行之后设置断点，然后随便输入6个数字。这里我就输入5 2 0 1 3 14了。</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax2.png" alt="eax2"></p>
+<p>然后查看此时eax中的值是多少：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png" alt="第一个数字"></p>
+<p>果然，里面的值就是我们输入的第一个数字。所以第一个数字是1不会爆炸。</p>
+<p>知道这一点后我们继续往下看代码，标有数字2的代码段，给[ebp-c]处的位置加1后如果值小于等于5就跳转到401896那一行。很显然，这是一个循环。5次循环，每一次得到后一个数字，接下来查找这里面的规律。</p>
+<p>在2的上方，如果比较eax和edx不相等就爆炸，再往上看到3这个位置 $edx &#x3D; ($edx+1)*$eax。最终得到的edx中的值就应该是我们希望知道的数字，edx加1之前的值就是循环计数的值，所以5次循环中，加1后依次是2 3 4 5 6.还要乘以eax中的值，那此时eax中的值是什么呢？通过1-3之间的代码不难看出就是存放的前一个数字，如果推断不出来，通过gdb查看也是可以的。总结一下这五个数字的关系</p>
+<p>N<sub>k</sub> &#x3D; (n+1) N<sub>k-1</sub>  （N<sub>k</sub>表示第k个数字，n表示第几次循环）</p>
+<p>由于第一个数字是1，带入上方公式，第二个数字就是2×1&#x3D;2，第三个数字就是3×2&#x3D;6…依次是24、120、720。至此，第二关通过！</p>
+<h2 id="Phase-3"><a href="#Phase-3" class="headerlink" title="Phase_3"></a>Phase_3</h2><p><strong>知识点：switch语句</strong></p>
+<p>首先分析一下前面一段汇编代码：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/3-0.png" alt="3-0"></p>
+<p>在标号1处，修改esp上方区域的值，用<code>lea</code>指令传递地址（这里传递了三个变量，可以猜测是否就是需要输入三个变量呢？），这是再向后一个调用的函数传递参数。可以看到后面调用了<code>sscan()</code>函数。查了一下这个函数的声明如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">sscanf</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *str, <span class="type">const</span> <span class="type">char</span> *format, ...)</span></span><br></pre></td></tr></table></figure>
+
+<p>接着看到箭头处，我们先来查一下这个地址里装的什么：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%8F%82%E6%95%B0.png" alt="参数"></p>
+<p>显然，是<code>sscan()</code>的format参数。这是要我们输入三个变量：<strong>整形 字符型 整形</strong>。</p>
+<p>在标号2的代码段中，如果函数返回值（正确输入的个数）不大于2就爆炸。</p>
+<p>在标号1处 -0x10(%ebp)、-0x11(%ebp)、-0x18(%ebp)处就存放了我们的三个输入，接着往下看：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch.png" alt="switch"></p>
+<p>把第一个输入的数字和7比较，如果大于7就跳转（紧接着爆炸，其实就是到default），ja是无符号比较。也就是说我们可以确定第一个整数的范围就是<strong>0-7</strong>。</p>
+<p>所以最后跳转的地方根据eax不同有8中情况。这应该就是switch语句了，调试查询处这几个跳转的地址：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E8%B7%B3%E8%BD%AC.png" alt="跳转"></p>
+<p>接着往下看代码，根据这个地址分成了8个部分：</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch2.png" alt="switch2"></p>
+<p>也就是说这一关的答案不是唯一的，下面我们就拿2号开始尝试。</p>
+<p>把0x62存入到-0x9(%ebp)中，把我们输入的第三个整数存入到eax中和0x2f3比较，不相等就爆炸，所以如果第一个整数是2那第三个整数应该是755（十进制）,接着jump:</p>
+<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%AD%97%E7%AC%A6.png" alt="字符"></p>
+<p>到了这个函数的最后，可以得知0x62就是第二个输入，0x62对应的是字符b。</p>
+<p>所以其中一种可能的输入是 <strong>2 b 755</strong>。其他的不再赘述，可以自行尝试，至此，第三关通过！</p>
+]]></content>
+      <tags>
+        <tag>cs</tag>
+        <tag>gdb</tag>
       </tags>
   </entry>
 </search>
