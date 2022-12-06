@@ -103,68 +103,6 @@
       </tags>
   </entry>
   <entry>
-    <title>MapReduce论文阅读</title>
-    <url>/2022/04/01/MapReduce/</url>
-    <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>对于大数据量任务的处理，要想在可接受的时间内完成运算，只有将这些计算分布在成百上千的主机上。如何处理并行计算、如何分发数据、如何处理错误？所有这些问题综合在一起，需要大量的代码处理，因此也使得原本简单的运算变得难以处理。</p>
-<p>为了解决上述复杂的问题，我们设计一个新的抽象模型，使用这个抽象模型，我们只要表述我们想要执行的简单运算即可，而不必关心并行计算、容错、数据分布、负载均衡等复杂的细节，这些问题都被封装在了一个库里面—MapReduce。</p>
-<span id="more"></span>
-<h2 id="Programming-Model"><a href="#Programming-Model" class="headerlink" title="Programming Model"></a>Programming Model</h2><p>MapReduce 库的用户只需要聚焦于两个函数的实现来进行任务的处理：Map 和 Reduce。</p>
-<ul>
-<li>Map, takes an input pair and produces a set of intermediate key&#x2F;value pairs. The MapReduce library groups together all intermediate values associated with the same intermediate key I and passes them to the Reduce function</li>
-<li>The Reduce function, accepts an intermediate key I and a set of values for that key. It merges together these values to form a possibly smaller set of values. Typically just zero or one output value is produced per Reduce invocation. The intermediate values are supplied to the user’s reduce function via an iterator. This allows us to handle lists of values that are too large to fit in memory</li>
-</ul>
-<h2 id="Execution-Overview"><a href="#Execution-Overview" class="headerlink" title="Execution Overview"></a>Execution Overview</h2><p><img src="/2022/04/01/MapReduce/1.png" alt="Execution Overview"></p>
-<ol>
-<li>用户程序首先调用的 MapReduce 库将输入文件分成 M 个数据片段，每个数据片段的大小一般从 16MB 到 64MB（可以通过可选的参数来控制每个数据片段的大小）。然后用户程序在机群中创建大量的程序副本。</li>
-<li>这些程序副本中的有一个特殊的程序–-master。副本中其它的程序都是 worker 程序，由 master 分配任务。有 M 个 Map 任务和 R 个 Reduce 任务将被分配，master 将一个 Map 任务或 Reduce 任务分配给一个空闲的 worker。</li>
-<li>被分配了 map 任务的 worker 程序读取相关的输入数据片段，从输入的数据片段中解析出 key&#x2F;value pair，然后把 key&#x2F;value pair 传递给用户自定义的 Map 函数，由 Map 函数生成并输出的中间 key&#x2F;value pair，并缓存在内存中。</li>
-<li>缓存中的 key&#x2F;value pair 通过分区函数分成 R 个区域，之后周期性的写入到本地磁盘上。缓存的 key&#x2F;value pair 在本地磁盘上的存储位置将被回传给 master，由 master 负责把这些存储位置再传送给 Reduce worker</li>
-<li>当 Reduce worker 程序接收到 master 程序发来的数据存储位置信息后，使用 RPC 从 Map worker 所在主机的磁盘上读取这些缓存数据。当 Reduce worker 读取了所有的中间数据后，通过对 key 进行排序后使得具有相同 key 值的数据聚合在一起。由于许多不同的 key 值会映射到相同的 Reduce 任务上，因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。</li>
-<li>Reduce worker 程序遍历排序后的中间数据，对于每一个唯一的中间 key 值，Reduce worker 程序将这个 key 值和它相关的中间 value 值的集合传递给用户自定义的 Reduce 函数。Reduce 函数的输出被追加到所属分区的输出文件。</li>
-<li>当所有的 Map 和 Reduce 任务都完成之后，master 唤醒用户程序。在这个时候，在用户程序里的对 MapReduce 调用才返回。</li>
-</ol>
-<p>结束后会产生R个输出文件。用户可以将其feed到下一个MapReduce中去，或者在另外一个可以处理多个分割文件的分布式应用中使用。</p>
-<h2 id="Master-Data-Structures"><a href="#Master-Data-Structures" class="headerlink" title="Master Data Structures"></a>Master Data Structures</h2><p>Master持有一些数据结构，它存储每一个Map和Reduce任务的状态(idle, in-progress, or completed), 以及Worker机器的标识(for non-idle tasks)。</p>
-<p>Master就像一个数据管道，中间文件存储区域的位置信息通过这个管道从Map传递到Reduce。因此，对于每个已经完成的Map任务，master存储了Map任务产生的R个中间文件存储区域的大小和位置。当Map任务完成时，Master接收到位置和大小的更新信息，这些信息被逐步递增的推送给那些正在工作的Reduce任务。</p>
-<h2 id="Fault-Tolerance"><a href="#Fault-Tolerance" class="headerlink" title="Fault Tolerance"></a>Fault Tolerance</h2><h3 id="Worker-Failure"><a href="#Worker-Failure" class="headerlink" title="Worker Failure"></a>Worker Failure</h3><p>master周期性的ping每个worker。如果在一个约定的时间范围内没有收到worker返回的信息，master将把这个worker标记为失效：</p>
-<ul>
-<li>由于 Map 任务将数据临时存储在本地，所有由这个失效的worker完成的或正在运行的Map任务被重设为初始的idle状态，之后这些任务再被安排给其他的worker。</li>
-<li>对于这个woker的in-progress reduce task，同样重置为idle，而已经完成的Reduce任务的输出存储在全局文件系统上，因此不需要再次执行。</li>
-</ul>
-<p>当一个Map任务首先被worker A执行，之后由于worker A失效了又被调度到worker B执行，这个“重新执行”的动作会被通知给所有执行Reduce任务的worker。任何还没有从worker A读取数据的Reduce任务将从worker B读取数据。</p>
-<h3 id="Master-Failure"><a href="#Master-Failure" class="headerlink" title="Master Failure"></a>Master Failure</h3><p>由于只有一个master进程，master失效后再恢复是比较麻烦的，因此我们现在的实现是如果master失效，就中止MapReduce运算。客户可以检查到这个状态，并且可以根据需要重新执行MapReduce操作。</p>
-<h2 id="Locality"><a href="#Locality" class="headerlink" title="Locality"></a>Locality</h2><p>MapReduce的master在调度Map任务时会考虑输入文件的位置信息，尽量将一个Map任务调度在包含相关输入数据拷贝的机器上执行；如果上述努力失败了，master将尝试在保存有输入数据拷贝的机器附近的机器上执行Map任务(例如，分配到一个和包含输入数据的机器在一个switch里的worker机器上执行)。当在一个足够大的cluster集群上运行大型MapReduce操作的时候，大部分的输入数据都能从本地机器读取，因此消耗非常少的网络带宽。</p>
-<h2 id="Backup-Tasks"><a href="#Backup-Tasks" class="headerlink" title="Backup Tasks"></a>Backup Tasks</h2><p>在运算过程中，如果有一台机器花了很长的时间才完成最后几个Map或Reduce任务，导致MapReduce操作总的执行时间超过预期。比如：一个机器的硬盘出了问题，在读取的时候要经常的进行读取纠错操作，导致读取数据的速度从30M&#x2F;s降低到1M&#x2F;s。比如cluster的调度系统在这台机器上又调度了其他的任务，由于CPU、内存、本地硬盘和网络带宽等竞争因素的存在，导致执行MapReduce代码的执行效率更加缓慢。</p>
-<p>当一个MapReduce操作接近完成的时候，master调度备用（backup）任务进程来执行剩下的、处于处理中状态（in-progress）的任务。无论是最初的执行进程、还是备用（backup）任务进程完成了任务，我们都把这个任务标记成为已经完成。此机制通常只会占用比正常操作多几个百分点的计算资源。但能减少近 50% 的任务完成总时间。</p>
-<h2 id="Refinements"><a href="#Refinements" class="headerlink" title="Refinements"></a>Refinements</h2><h3 id="Partitioning-Function"><a href="#Partitioning-Function" class="headerlink" title="Partitioning Function"></a>Partitioning Function</h3><p>MapReduce 缺省的分区函数是使用 hash 方法（比如，hash(key) mod R) 进行分区。hash 方法能产生非常平衡的分区。然而，有的时候，其它的一些分区函数对 key 值进行的分区将非常有用。比如，输出的 key 值是 URLs，有的用户希望每个主机的所有条目保持在同一个输出文件中。为了支持类似的情况，MapReduce 库的用户需要提供专门的分区函数。例如，使用“hash(Hostname(urlkey))mod R”作为分区函数就可以把所有来自同一个主机的 URLs 保存在同一个输出文件中。</p>
-<h3 id="Ordering-Guarantees"><a href="#Ordering-Guarantees" class="headerlink" title="Ordering Guarantees"></a>Ordering Guarantees</h3><p>在给定的分区中，中间key&#x2F;value pair数据的处理顺序是按照key值增量顺序处理的。这样的顺序保证对每个分区成生成一个有序的输出文件，这对于需要对输出文件按key值随机存取的应用非常有意义，对在排序输出的数据集也很有帮助。</p>
-<h3 id="Combiner-Function"><a href="#Combiner-Function" class="headerlink" title="Combiner Function"></a>Combiner Function</h3><p>在某些情况下，Map函数产生的中间key值的重复数据会占很大的比重，并且，用户自定义的Reduce函数满足结合律和交换律。比如一个单词统计程序。可以通过一个combiner函数首先在本地将这些记录进行一次合并，然后将合并的结果再通过网络发送出去。</p>
-<p>Combiner函数在每台执行Map任务的机器上都会被执行一次。一般情况下，Combiner和Reduce函数是一样的。Combiner函数和Reduce函数之间唯一的区别是MapReduce库怎样控制函数的输出。Reduce函数的输出被保存在最终的输出文件里，而Combiner函数的输出被写到中间文件里，然后被发送给Reduce任务。</p>
-<h3 id="Side-effects"><a href="#Side-effects" class="headerlink" title="Side-effects"></a>Side-effects</h3><p>通常应用程序首先把输出结果写到一个临时文件中，在输出全部数据之后，在使用系统级的原子操作 rename 重新命名这个临时文件。</p>
-<h3 id="Skipping-Bad-Records"><a href="#Skipping-Bad-Records" class="headerlink" title="Skipping Bad Records"></a>Skipping Bad Records</h3><p>每个worker进程都设置了信号处理函数捕获内存段异常（segmentation violation）和总线错误（bus error）。在执行Map或者Reduce操作之前，MapReduce库通过全局变量保存记录序号。如果用户程序触发了一个系统信号，消息处理函数将用“最后一口气”通过UDP包向master发送处理的最后一条记录的序号。当master看到在处理某条特定记录不止失败一次时，master就标志着条记录需要被跳过，并且在下次重新执行相关的Map或者Reduce任务的时候跳过这条记录。(前提是忽略一些有问题的记录也是可以接受的)</p>
-<h3 id="Counters"><a href="#Counters" class="headerlink" title="Counters"></a>Counters</h3><p>用户可能想统计已经处理了多少个单词、已经索引的多少篇German文档等等。用户在程序中创建一个命名的计数器对象，在Map和Reduce函数中相应的增加计数器的值。这些计数器的值周期性的从各个单独的worker机器上传递给master（附加在ping的应答包中传递）。master把执行成功的Map和Reduce任务的计数器值进行累计，当MapReduce操作完成之后，返回给用户代码。</p>
-<h2 id="Conclusions"><a href="#Conclusions" class="headerlink" title="Conclusions"></a>Conclusions</h2><p>MapReduce编程模型在Google内部成功应用于多个领域。这种成功可以归结为几个方面：</p>
-<ul>
-<li>MapReduce封装了并行处理、容错处理、数据本地化优化、负载均衡等等技术难点的细节，这使得MapReduce库易于使用</li>
-<li>大量不同类型的问题都可以通过MapReduce简单的解决。比如，MapReduce用于生成Google的网络搜索服务所需要的数据、用来排序、用来数据挖掘、用于机器学习，以及很多其它的系统</li>
-<li>实现了一个在数千台计算机组成的大型集群上灵活部署运行的MapReduce。这个实现使得有效利用这些丰富的计算资源变得非常简单，因此也适合用来解决其他很多需要大量计算的问题。</li>
-</ul>
-<h2 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h2><ul>
-<li>分布式的Grep：Map函数输出匹配某个模式的一行，Reduce函数是一个恒等函数，即把中间数据复制到输出。</li>
-<li>计算URL访问频率：Map函数处理日志中web页面请求的记录，然后输出(URL,1)。Reduce函数把相同URL的value值都累加起来，产生(URL,记录总数)结果。</li>
-<li>倒转网络链接图：Map函数在源页面（source）中搜索所有的链接目标（target）并输出为(target,source)。Reduce函数把给定链接目标（target）的链接组合成一个列表，输出(target,list(source))。</li>
-<li>每个主机的检索词向量：检索词向量用一个(词,频率)列表来概述出现在文档或文档集中的最重要的一些词。Map函数为每一个输入文档输出(主机名,检索词向量)，其中主机名来自文档的URL。Reduce函数接收给定主机的所有文档的检索词向量，并把这些检索词向量加在一起，丢弃掉低频的检索词，输出一个最终的(主机名,检索词向量)。</li>
-<li>倒排索引：Map函数分析每个文档输出一个(词,文档号)的列表，Reduce函数的输入是一个给定词的所有（词，文档号），排序所有的文档号，输出(词,list（文档号）)。所有的输出集合形成一个简单的倒排索引，它以一种简单的算法跟踪词在文档中的位置。</li>
-<li>分布式排序：Map函数从每个记录提取key，输出(key,record)。Reduce函数不改变任何的值。这个运算依赖分区机制(在4.1描述)和排序属性(在4.2描述)。</li>
-</ul>
-<h2 id="相关资料"><a href="#相关资料" class="headerlink" title="相关资料"></a>相关资料</h2><p><a href="https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
-]]></content>
-      <tags>
-        <tag>分布式</tag>
-        <tag>大数据</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Vim Memo List</title>
     <url>/2022/12/06/Vim%20Memo%20List/</url>
     <content><![CDATA[<h2 id="Normal"><a href="#Normal" class="headerlink" title="Normal"></a>Normal</h2><span id="more"></span>
@@ -372,6 +310,68 @@
       </tags>
   </entry>
   <entry>
+    <title>MapReduce论文阅读</title>
+    <url>/2022/04/01/MapReduce/</url>
+    <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>对于大数据量任务的处理，要想在可接受的时间内完成运算，只有将这些计算分布在成百上千的主机上。如何处理并行计算、如何分发数据、如何处理错误？所有这些问题综合在一起，需要大量的代码处理，因此也使得原本简单的运算变得难以处理。</p>
+<p>为了解决上述复杂的问题，我们设计一个新的抽象模型，使用这个抽象模型，我们只要表述我们想要执行的简单运算即可，而不必关心并行计算、容错、数据分布、负载均衡等复杂的细节，这些问题都被封装在了一个库里面—MapReduce。</p>
+<span id="more"></span>
+<h2 id="Programming-Model"><a href="#Programming-Model" class="headerlink" title="Programming Model"></a>Programming Model</h2><p>MapReduce 库的用户只需要聚焦于两个函数的实现来进行任务的处理：Map 和 Reduce。</p>
+<ul>
+<li>Map, takes an input pair and produces a set of intermediate key&#x2F;value pairs. The MapReduce library groups together all intermediate values associated with the same intermediate key I and passes them to the Reduce function</li>
+<li>The Reduce function, accepts an intermediate key I and a set of values for that key. It merges together these values to form a possibly smaller set of values. Typically just zero or one output value is produced per Reduce invocation. The intermediate values are supplied to the user’s reduce function via an iterator. This allows us to handle lists of values that are too large to fit in memory</li>
+</ul>
+<h2 id="Execution-Overview"><a href="#Execution-Overview" class="headerlink" title="Execution Overview"></a>Execution Overview</h2><p><img src="/2022/04/01/MapReduce/1.png" alt="Execution Overview"></p>
+<ol>
+<li>用户程序首先调用的 MapReduce 库将输入文件分成 M 个数据片段，每个数据片段的大小一般从 16MB 到 64MB（可以通过可选的参数来控制每个数据片段的大小）。然后用户程序在机群中创建大量的程序副本。</li>
+<li>这些程序副本中的有一个特殊的程序–-master。副本中其它的程序都是 worker 程序，由 master 分配任务。有 M 个 Map 任务和 R 个 Reduce 任务将被分配，master 将一个 Map 任务或 Reduce 任务分配给一个空闲的 worker。</li>
+<li>被分配了 map 任务的 worker 程序读取相关的输入数据片段，从输入的数据片段中解析出 key&#x2F;value pair，然后把 key&#x2F;value pair 传递给用户自定义的 Map 函数，由 Map 函数生成并输出的中间 key&#x2F;value pair，并缓存在内存中。</li>
+<li>缓存中的 key&#x2F;value pair 通过分区函数分成 R 个区域，之后周期性的写入到本地磁盘上。缓存的 key&#x2F;value pair 在本地磁盘上的存储位置将被回传给 master，由 master 负责把这些存储位置再传送给 Reduce worker</li>
+<li>当 Reduce worker 程序接收到 master 程序发来的数据存储位置信息后，使用 RPC 从 Map worker 所在主机的磁盘上读取这些缓存数据。当 Reduce worker 读取了所有的中间数据后，通过对 key 进行排序后使得具有相同 key 值的数据聚合在一起。由于许多不同的 key 值会映射到相同的 Reduce 任务上，因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。</li>
+<li>Reduce worker 程序遍历排序后的中间数据，对于每一个唯一的中间 key 值，Reduce worker 程序将这个 key 值和它相关的中间 value 值的集合传递给用户自定义的 Reduce 函数。Reduce 函数的输出被追加到所属分区的输出文件。</li>
+<li>当所有的 Map 和 Reduce 任务都完成之后，master 唤醒用户程序。在这个时候，在用户程序里的对 MapReduce 调用才返回。</li>
+</ol>
+<p>结束后会产生R个输出文件。用户可以将其feed到下一个MapReduce中去，或者在另外一个可以处理多个分割文件的分布式应用中使用。</p>
+<h2 id="Master-Data-Structures"><a href="#Master-Data-Structures" class="headerlink" title="Master Data Structures"></a>Master Data Structures</h2><p>Master持有一些数据结构，它存储每一个Map和Reduce任务的状态(idle, in-progress, or completed), 以及Worker机器的标识(for non-idle tasks)。</p>
+<p>Master就像一个数据管道，中间文件存储区域的位置信息通过这个管道从Map传递到Reduce。因此，对于每个已经完成的Map任务，master存储了Map任务产生的R个中间文件存储区域的大小和位置。当Map任务完成时，Master接收到位置和大小的更新信息，这些信息被逐步递增的推送给那些正在工作的Reduce任务。</p>
+<h2 id="Fault-Tolerance"><a href="#Fault-Tolerance" class="headerlink" title="Fault Tolerance"></a>Fault Tolerance</h2><h3 id="Worker-Failure"><a href="#Worker-Failure" class="headerlink" title="Worker Failure"></a>Worker Failure</h3><p>master周期性的ping每个worker。如果在一个约定的时间范围内没有收到worker返回的信息，master将把这个worker标记为失效：</p>
+<ul>
+<li>由于 Map 任务将数据临时存储在本地，所有由这个失效的worker完成的或正在运行的Map任务被重设为初始的idle状态，之后这些任务再被安排给其他的worker。</li>
+<li>对于这个woker的in-progress reduce task，同样重置为idle，而已经完成的Reduce任务的输出存储在全局文件系统上，因此不需要再次执行。</li>
+</ul>
+<p>当一个Map任务首先被worker A执行，之后由于worker A失效了又被调度到worker B执行，这个“重新执行”的动作会被通知给所有执行Reduce任务的worker。任何还没有从worker A读取数据的Reduce任务将从worker B读取数据。</p>
+<h3 id="Master-Failure"><a href="#Master-Failure" class="headerlink" title="Master Failure"></a>Master Failure</h3><p>由于只有一个master进程，master失效后再恢复是比较麻烦的，因此我们现在的实现是如果master失效，就中止MapReduce运算。客户可以检查到这个状态，并且可以根据需要重新执行MapReduce操作。</p>
+<h2 id="Locality"><a href="#Locality" class="headerlink" title="Locality"></a>Locality</h2><p>MapReduce的master在调度Map任务时会考虑输入文件的位置信息，尽量将一个Map任务调度在包含相关输入数据拷贝的机器上执行；如果上述努力失败了，master将尝试在保存有输入数据拷贝的机器附近的机器上执行Map任务(例如，分配到一个和包含输入数据的机器在一个switch里的worker机器上执行)。当在一个足够大的cluster集群上运行大型MapReduce操作的时候，大部分的输入数据都能从本地机器读取，因此消耗非常少的网络带宽。</p>
+<h2 id="Backup-Tasks"><a href="#Backup-Tasks" class="headerlink" title="Backup Tasks"></a>Backup Tasks</h2><p>在运算过程中，如果有一台机器花了很长的时间才完成最后几个Map或Reduce任务，导致MapReduce操作总的执行时间超过预期。比如：一个机器的硬盘出了问题，在读取的时候要经常的进行读取纠错操作，导致读取数据的速度从30M&#x2F;s降低到1M&#x2F;s。比如cluster的调度系统在这台机器上又调度了其他的任务，由于CPU、内存、本地硬盘和网络带宽等竞争因素的存在，导致执行MapReduce代码的执行效率更加缓慢。</p>
+<p>当一个MapReduce操作接近完成的时候，master调度备用（backup）任务进程来执行剩下的、处于处理中状态（in-progress）的任务。无论是最初的执行进程、还是备用（backup）任务进程完成了任务，我们都把这个任务标记成为已经完成。此机制通常只会占用比正常操作多几个百分点的计算资源。但能减少近 50% 的任务完成总时间。</p>
+<h2 id="Refinements"><a href="#Refinements" class="headerlink" title="Refinements"></a>Refinements</h2><h3 id="Partitioning-Function"><a href="#Partitioning-Function" class="headerlink" title="Partitioning Function"></a>Partitioning Function</h3><p>MapReduce 缺省的分区函数是使用 hash 方法（比如，hash(key) mod R) 进行分区。hash 方法能产生非常平衡的分区。然而，有的时候，其它的一些分区函数对 key 值进行的分区将非常有用。比如，输出的 key 值是 URLs，有的用户希望每个主机的所有条目保持在同一个输出文件中。为了支持类似的情况，MapReduce 库的用户需要提供专门的分区函数。例如，使用“hash(Hostname(urlkey))mod R”作为分区函数就可以把所有来自同一个主机的 URLs 保存在同一个输出文件中。</p>
+<h3 id="Ordering-Guarantees"><a href="#Ordering-Guarantees" class="headerlink" title="Ordering Guarantees"></a>Ordering Guarantees</h3><p>在给定的分区中，中间key&#x2F;value pair数据的处理顺序是按照key值增量顺序处理的。这样的顺序保证对每个分区成生成一个有序的输出文件，这对于需要对输出文件按key值随机存取的应用非常有意义，对在排序输出的数据集也很有帮助。</p>
+<h3 id="Combiner-Function"><a href="#Combiner-Function" class="headerlink" title="Combiner Function"></a>Combiner Function</h3><p>在某些情况下，Map函数产生的中间key值的重复数据会占很大的比重，并且，用户自定义的Reduce函数满足结合律和交换律。比如一个单词统计程序。可以通过一个combiner函数首先在本地将这些记录进行一次合并，然后将合并的结果再通过网络发送出去。</p>
+<p>Combiner函数在每台执行Map任务的机器上都会被执行一次。一般情况下，Combiner和Reduce函数是一样的。Combiner函数和Reduce函数之间唯一的区别是MapReduce库怎样控制函数的输出。Reduce函数的输出被保存在最终的输出文件里，而Combiner函数的输出被写到中间文件里，然后被发送给Reduce任务。</p>
+<h3 id="Side-effects"><a href="#Side-effects" class="headerlink" title="Side-effects"></a>Side-effects</h3><p>通常应用程序首先把输出结果写到一个临时文件中，在输出全部数据之后，在使用系统级的原子操作 rename 重新命名这个临时文件。</p>
+<h3 id="Skipping-Bad-Records"><a href="#Skipping-Bad-Records" class="headerlink" title="Skipping Bad Records"></a>Skipping Bad Records</h3><p>每个worker进程都设置了信号处理函数捕获内存段异常（segmentation violation）和总线错误（bus error）。在执行Map或者Reduce操作之前，MapReduce库通过全局变量保存记录序号。如果用户程序触发了一个系统信号，消息处理函数将用“最后一口气”通过UDP包向master发送处理的最后一条记录的序号。当master看到在处理某条特定记录不止失败一次时，master就标志着条记录需要被跳过，并且在下次重新执行相关的Map或者Reduce任务的时候跳过这条记录。(前提是忽略一些有问题的记录也是可以接受的)</p>
+<h3 id="Counters"><a href="#Counters" class="headerlink" title="Counters"></a>Counters</h3><p>用户可能想统计已经处理了多少个单词、已经索引的多少篇German文档等等。用户在程序中创建一个命名的计数器对象，在Map和Reduce函数中相应的增加计数器的值。这些计数器的值周期性的从各个单独的worker机器上传递给master（附加在ping的应答包中传递）。master把执行成功的Map和Reduce任务的计数器值进行累计，当MapReduce操作完成之后，返回给用户代码。</p>
+<h2 id="Conclusions"><a href="#Conclusions" class="headerlink" title="Conclusions"></a>Conclusions</h2><p>MapReduce编程模型在Google内部成功应用于多个领域。这种成功可以归结为几个方面：</p>
+<ul>
+<li>MapReduce封装了并行处理、容错处理、数据本地化优化、负载均衡等等技术难点的细节，这使得MapReduce库易于使用</li>
+<li>大量不同类型的问题都可以通过MapReduce简单的解决。比如，MapReduce用于生成Google的网络搜索服务所需要的数据、用来排序、用来数据挖掘、用于机器学习，以及很多其它的系统</li>
+<li>实现了一个在数千台计算机组成的大型集群上灵活部署运行的MapReduce。这个实现使得有效利用这些丰富的计算资源变得非常简单，因此也适合用来解决其他很多需要大量计算的问题。</li>
+</ul>
+<h2 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h2><ul>
+<li>分布式的Grep：Map函数输出匹配某个模式的一行，Reduce函数是一个恒等函数，即把中间数据复制到输出。</li>
+<li>计算URL访问频率：Map函数处理日志中web页面请求的记录，然后输出(URL,1)。Reduce函数把相同URL的value值都累加起来，产生(URL,记录总数)结果。</li>
+<li>倒转网络链接图：Map函数在源页面（source）中搜索所有的链接目标（target）并输出为(target,source)。Reduce函数把给定链接目标（target）的链接组合成一个列表，输出(target,list(source))。</li>
+<li>每个主机的检索词向量：检索词向量用一个(词,频率)列表来概述出现在文档或文档集中的最重要的一些词。Map函数为每一个输入文档输出(主机名,检索词向量)，其中主机名来自文档的URL。Reduce函数接收给定主机的所有文档的检索词向量，并把这些检索词向量加在一起，丢弃掉低频的检索词，输出一个最终的(主机名,检索词向量)。</li>
+<li>倒排索引：Map函数分析每个文档输出一个(词,文档号)的列表，Reduce函数的输入是一个给定词的所有（词，文档号），排序所有的文档号，输出(词,list（文档号）)。所有的输出集合形成一个简单的倒排索引，它以一种简单的算法跟踪词在文档中的位置。</li>
+<li>分布式排序：Map函数从每个记录提取key，输出(key,record)。Reduce函数不改变任何的值。这个运算依赖分区机制(在4.1描述)和排序属性(在4.2描述)。</li>
+</ul>
+<h2 id="相关资料"><a href="#相关资料" class="headerlink" title="相关资料"></a>相关资料</h2><p><a href="https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+        <tag>大数据</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Bitcoin: A Peer-to-Peer Electronic Cash System</title>
     <url>/2022/11/22/bitcoin/</url>
     <content><![CDATA[<h2 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h2><p>A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution.</p>
@@ -450,7 +450,7 @@
   </entry>
   <entry>
     <title>二进制炸弹</title>
-    <url>/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/</url>
+    <url>/2020/11/01/BinaryBomb/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近上系统级编程的课，其中一个实验是破解二进制炸弹，下面记录一下解题思路。</p>
 <span id="more"></span>
 
@@ -463,24 +463,24 @@
 <h3 id="反汇编"><a href="#反汇编" class="headerlink" title="反汇编"></a>反汇编</h3><p>在bomb.exe文件下路径下，执行<strong>objdump -d bomb.exe</strong>，得到了程序的汇编代码。然后大致浏览了一下，发现其中有六个函数phase_1……phase_6，基本上也就可以确定就是这六个关卡了。</p>
 <h2 id="phase-1"><a href="#phase-1" class="headerlink" title="phase_1"></a>phase_1</h2><p><strong>知识点：string，函数调用，栈</strong></p>
 <p>找到phase_1对应的汇编代码，可以看到就那么10几行</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase1.png" alt="phase1"></p>
+<p><img src="/2020/11/01/BinaryBomb/phase1.png" alt="phase1"></p>
 <p>不难发现，其中一个call指令，调用了string_not_equal函数。可以猜测到应该就是<strong>比较我们输入的字符串密码和内置的密码是否相等</strong></p>
 <p>接下来使用gdb调试程序，这个函数前三行都是给函数分配栈空间，对实验没什么影响，我们在第四行设置一个断点，运行：</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">b *0x40184c  <span class="comment">#设置断点</span></span><br><span class="line">r     <span class="comment">#运行</span></span><br></pre></td></tr></table></figure>
 
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/r.png" alt="r"></p>
+<p><img src="/2020/11/01/BinaryBomb/r.png" alt="r"></p>
 <p>然后乱输入一个123456789进入，那么我们输入的字符串被放在哪里了呢？肯定是作为一个参数要传进字符串比较这个函数的，才可以进行比较。在调用这个函数之前，是把这个eax寄存器中的值传给了esp的，我们不妨查看一下eax中的值：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax.png" alt="eax"></p>
+<p><img src="/2020/11/01/BinaryBomb/eax.png" alt="eax"></p>
 <p>发现就是我们的输入，那要和哪个字符串进行比较呢？肯定也是最为参数传递进去了的，在第四行代码中，将一个地址的值放在了esp+4的位置，不出意外密码应该就是这个地址上的值了，接下来打印一下：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/1%E5%AF%86%E7%A0%81.png" alt="1密码"></p>
+<p><img src="/2020/11/01/BinaryBomb/1%E5%AF%86%E7%A0%81.png" alt="1密码"></p>
 <p>密码就是<code>Public speaking is very easy.</code>.&#x2F;BinaryBomb<br>接下来重新运行程序，输入密码就进入了第二关：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2.png" alt="phase2"></p>
+<p><img src="/2020/11/01/BinaryBomb/phase2.png" alt="phase2"></p>
 <h2 id="phase-2"><a href="#phase-2" class="headerlink" title="phase_2"></a>phase_2</h2><p><strong>知识点：循环</strong></p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2as.png" alt="phase2as"></p>
+<p><img src="/2020/11/01/BinaryBomb/phase2as.png" alt="phase2as"></p>
 <p>首先，大致看一下汇编代码，可以很显然的看到箭头处调用了一个函数：<strong>read_six_numbers</strong>。说明第二关是要输入6个数字。在调用了这个函数之后，把ebp-0x24中的值赋给eax寄存器，如果不等于1，则爆炸！那么我们可以猜测第一个数字就应该是1，为了验证这个想法我们在这一行之后设置断点，然后随便输入6个数字。这里我就输入5 2 0 1 3 14了。</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax2.png" alt="eax2"></p>
+<p><img src="/2020/11/01/BinaryBomb/eax2.png" alt="eax2"></p>
 <p>然后查看此时eax中的值是多少：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png" alt="第一个数字"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png" alt="第一个数字"></p>
 <p>果然，里面的值就是我们输入的第一个数字。所以第一个数字是1不会爆炸。</p>
 <p>知道这一点后我们继续往下看代码，标有数字2的代码段，给[ebp-c]处的位置加1后如果值小于等于5就跳转到401896那一行。很显然，这是一个循环。5次循环，每一次得到后一个数字，接下来查找这里面的规律。</p>
 <p>在2的上方，如果比较eax和edx不相等就爆炸，再往上看到3这个位置 $edx &#x3D; ($edx+1)*$eax。最终得到的edx中的值就应该是我们希望知道的数字，edx加1之前的值就是循环计数的值，所以5次循环中，加1后依次是2 3 4 5 6.还要乘以eax中的值，那此时eax中的值是什么呢？通过1-3之间的代码不难看出就是存放的前一个数字，如果推断不出来，通过gdb查看也是可以的。总结一下这五个数字的关系</p>
@@ -488,24 +488,24 @@
 <p>由于第一个数字是1，带入上方公式，第二个数字就是2×1&#x3D;2，第三个数字就是3×2&#x3D;6…依次是24、120、720。至此，第二关通过！</p>
 <h2 id="Phase-3"><a href="#Phase-3" class="headerlink" title="Phase_3"></a>Phase_3</h2><p><strong>知识点：switch语句</strong></p>
 <p>首先分析一下前面一段汇编代码：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/3-0.png" alt="3-0"></p>
+<p><img src="/2020/11/01/BinaryBomb/3-0.png" alt="3-0"></p>
 <p>在标号1处，修改esp上方区域的值，用<code>lea</code>指令传递地址（这里传递了三个变量，可以猜测是否就是需要输入三个变量呢？），这是再向后一个调用的函数传递参数。可以看到后面调用了<code>sscan()</code>函数。查了一下这个函数的声明如下：</p>
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">sscanf</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *str, <span class="type">const</span> <span class="type">char</span> *format, ...)</span></span><br></pre></td></tr></table></figure>
 
 <p>接着看到箭头处，我们先来查一下这个地址里装的什么：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%8F%82%E6%95%B0.png" alt="参数"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E5%8F%82%E6%95%B0.png" alt="参数"></p>
 <p>显然，是<code>sscan()</code>的format参数。这是要我们输入三个变量：<strong>整形 字符型 整形</strong>。</p>
 <p>在标号2的代码段中，如果函数返回值（正确输入的个数）不大于2就爆炸。</p>
 <p>在标号1处 -0x10(%ebp)、-0x11(%ebp)、-0x18(%ebp)处就存放了我们的三个输入，接着往下看：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch.png" alt="switch"></p>
+<p><img src="/2020/11/01/BinaryBomb/switch.png" alt="switch"></p>
 <p>把第一个输入的数字和7比较，如果大于7就跳转（紧接着爆炸，其实就是到default），ja是无符号比较。也就是说我们可以确定第一个整数的范围就是<strong>0-7</strong>。</p>
 <p>所以最后跳转的地方根据eax不同有8中情况。这应该就是switch语句了，调试查询处这几个跳转的地址：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E8%B7%B3%E8%BD%AC.png" alt="跳转"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E8%B7%B3%E8%BD%AC.png" alt="跳转"></p>
 <p>接着往下看代码，根据这个地址分成了8个部分：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch2.png" alt="switch2"></p>
+<p><img src="/2020/11/01/BinaryBomb/switch2.png" alt="switch2"></p>
 <p>也就是说这一关的答案不是唯一的，下面我们就拿2号开始尝试。</p>
 <p>把0x62存入到-0x9(%ebp)中，把我们输入的第三个整数存入到eax中和0x2f3比较，不相等就爆炸，所以如果第一个整数是2那第三个整数应该是755（十进制）,接着jump:</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%AD%97%E7%AC%A6.png" alt="字符"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E5%AD%97%E7%AC%A6.png" alt="字符"></p>
 <p>到了这个函数的最后，可以得知0x62就是第二个输入，0x62对应的是字符b。</p>
 <p>所以其中一种可能的输入是 <strong>2 b 755</strong>。其他的不再赘述，可以自行尝试，至此，第三关通过！</p>
 ]]></content>

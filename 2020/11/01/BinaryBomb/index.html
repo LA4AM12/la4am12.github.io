@@ -22,38 +22,38 @@
     <meta name="description" content="前言最近上系统级编程的课，其中一个实验是破解二进制炸弹，下面记录一下解题思路。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="二进制炸弹">
-<meta property="og:url" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/index.html">
+<meta property="og:url" content="https://la4am12.github.io/2020/11/01/BinaryBomb/index.html">
 <meta property="og:site_name" content="星宿长安">
 <meta property="og:description" content="前言最近上系统级编程的课，其中一个实验是破解二进制炸弹，下面记录一下解题思路。">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase1.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/r.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/1%E5%AF%86%E7%A0%81.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2as.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax2.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/3-0.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%8F%82%E6%95%B0.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E8%B7%B3%E8%BD%AC.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch2.png">
-<meta property="og:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%AD%97%E7%AC%A6.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/phase1.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/r.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/eax.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/1%E5%AF%86%E7%A0%81.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/phase2.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/phase2as.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/eax2.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/3-0.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/%E5%8F%82%E6%95%B0.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/switch.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/%E8%B7%B3%E8%BD%AC.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/switch2.png">
+<meta property="og:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/%E5%AD%97%E7%AC%A6.png">
 <meta property="article:published_time" content="2020-11-01T07:55:07.000Z">
-<meta property="article:modified_time" content="2022-12-06T14:25:40.046Z">
+<meta property="article:modified_time" content="2022-12-06T14:42:49.964Z">
 <meta property="article:author" content="La4am&amp;12">
 <meta property="article:tag" content="cs">
 <meta property="article:tag" content="gdb">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase1.png">
+<meta name="twitter:image" content="https://la4am12.github.io/2020/11/01/BinaryBomb/phase1.png">
 
 
-<link rel="canonical" href="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/">
+<link rel="canonical" href="https://la4am12.github.io/2020/11/01/BinaryBomb/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/","path":"2020/11/01/二进制炸弹/","title":"二进制炸弹"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"https://la4am12.github.io/2020/11/01/BinaryBomb/","path":"2020/11/01/BinaryBomb/","title":"二进制炸弹"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
 <title>二进制炸弹 | 星宿长安</title>
@@ -154,7 +154,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://la4am12.github.io/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/">
+    <link itemprop="mainEntityOfPage" href="https://la4am12.github.io/2020/11/01/BinaryBomb/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -222,24 +222,24 @@
 <h3 id="反汇编"><a href="#反汇编" class="headerlink" title="反汇编"></a>反汇编</h3><p>在bomb.exe文件下路径下，执行<strong>objdump -d bomb.exe</strong>，得到了程序的汇编代码。然后大致浏览了一下，发现其中有六个函数phase_1……phase_6，基本上也就可以确定就是这六个关卡了。</p>
 <h2 id="phase-1"><a href="#phase-1" class="headerlink" title="phase_1"></a>phase_1</h2><p><strong>知识点：string，函数调用，栈</strong></p>
 <p>找到phase_1对应的汇编代码，可以看到就那么10几行</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase1.png" alt="phase1"></p>
+<p><img src="/2020/11/01/BinaryBomb/phase1.png" alt="phase1"></p>
 <p>不难发现，其中一个call指令，调用了string_not_equal函数。可以猜测到应该就是<strong>比较我们输入的字符串密码和内置的密码是否相等</strong></p>
 <p>接下来使用gdb调试程序，这个函数前三行都是给函数分配栈空间，对实验没什么影响，我们在第四行设置一个断点，运行：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">b *0x40184c  <span class="comment">#设置断点</span></span><br><span class="line">r     <span class="comment">#运行</span></span><br></pre></td></tr></table></figure>
 
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/r.png" alt="r"></p>
+<p><img src="/2020/11/01/BinaryBomb/r.png" alt="r"></p>
 <p>然后乱输入一个123456789进入，那么我们输入的字符串被放在哪里了呢？肯定是作为一个参数要传进字符串比较这个函数的，才可以进行比较。在调用这个函数之前，是把这个eax寄存器中的值传给了esp的，我们不妨查看一下eax中的值：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax.png" alt="eax"></p>
+<p><img src="/2020/11/01/BinaryBomb/eax.png" alt="eax"></p>
 <p>发现就是我们的输入，那要和哪个字符串进行比较呢？肯定也是最为参数传递进去了的，在第四行代码中，将一个地址的值放在了esp+4的位置，不出意外密码应该就是这个地址上的值了，接下来打印一下：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/1%E5%AF%86%E7%A0%81.png" alt="1密码"></p>
+<p><img src="/2020/11/01/BinaryBomb/1%E5%AF%86%E7%A0%81.png" alt="1密码"></p>
 <p>密码就是<code>Public speaking is very easy.</code>.&#x2F;BinaryBomb<br>接下来重新运行程序，输入密码就进入了第二关：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2.png" alt="phase2"></p>
+<p><img src="/2020/11/01/BinaryBomb/phase2.png" alt="phase2"></p>
 <h2 id="phase-2"><a href="#phase-2" class="headerlink" title="phase_2"></a>phase_2</h2><p><strong>知识点：循环</strong></p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/phase2as.png" alt="phase2as"></p>
+<p><img src="/2020/11/01/BinaryBomb/phase2as.png" alt="phase2as"></p>
 <p>首先，大致看一下汇编代码，可以很显然的看到箭头处调用了一个函数：<strong>read_six_numbers</strong>。说明第二关是要输入6个数字。在调用了这个函数之后，把ebp-0x24中的值赋给eax寄存器，如果不等于1，则爆炸！那么我们可以猜测第一个数字就应该是1，为了验证这个想法我们在这一行之后设置断点，然后随便输入6个数字。这里我就输入5 2 0 1 3 14了。</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/eax2.png" alt="eax2"></p>
+<p><img src="/2020/11/01/BinaryBomb/eax2.png" alt="eax2"></p>
 <p>然后查看此时eax中的值是多少：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png" alt="第一个数字"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%95%B0%E5%AD%97.png" alt="第一个数字"></p>
 <p>果然，里面的值就是我们输入的第一个数字。所以第一个数字是1不会爆炸。</p>
 <p>知道这一点后我们继续往下看代码，标有数字2的代码段，给[ebp-c]处的位置加1后如果值小于等于5就跳转到401896那一行。很显然，这是一个循环。5次循环，每一次得到后一个数字，接下来查找这里面的规律。</p>
 <p>在2的上方，如果比较eax和edx不相等就爆炸，再往上看到3这个位置 $edx &#x3D; ($edx+1)*$eax。最终得到的edx中的值就应该是我们希望知道的数字，edx加1之前的值就是循环计数的值，所以5次循环中，加1后依次是2 3 4 5 6.还要乘以eax中的值，那此时eax中的值是什么呢？通过1-3之间的代码不难看出就是存放的前一个数字，如果推断不出来，通过gdb查看也是可以的。总结一下这五个数字的关系</p>
@@ -247,24 +247,24 @@
 <p>由于第一个数字是1，带入上方公式，第二个数字就是2×1&#x3D;2，第三个数字就是3×2&#x3D;6…依次是24、120、720。至此，第二关通过！</p>
 <h2 id="Phase-3"><a href="#Phase-3" class="headerlink" title="Phase_3"></a>Phase_3</h2><p><strong>知识点：switch语句</strong></p>
 <p>首先分析一下前面一段汇编代码：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/3-0.png" alt="3-0"></p>
+<p><img src="/2020/11/01/BinaryBomb/3-0.png" alt="3-0"></p>
 <p>在标号1处，修改esp上方区域的值，用<code>lea</code>指令传递地址（这里传递了三个变量，可以猜测是否就是需要输入三个变量呢？），这是再向后一个调用的函数传递参数。可以看到后面调用了<code>sscan()</code>函数。查了一下这个函数的声明如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">sscanf</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *str, <span class="type">const</span> <span class="type">char</span> *format, ...)</span></span><br></pre></td></tr></table></figure>
 
 <p>接着看到箭头处，我们先来查一下这个地址里装的什么：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%8F%82%E6%95%B0.png" alt="参数"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E5%8F%82%E6%95%B0.png" alt="参数"></p>
 <p>显然，是<code>sscan()</code>的format参数。这是要我们输入三个变量：<strong>整形 字符型 整形</strong>。</p>
 <p>在标号2的代码段中，如果函数返回值（正确输入的个数）不大于2就爆炸。</p>
 <p>在标号1处 -0x10(%ebp)、-0x11(%ebp)、-0x18(%ebp)处就存放了我们的三个输入，接着往下看：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch.png" alt="switch"></p>
+<p><img src="/2020/11/01/BinaryBomb/switch.png" alt="switch"></p>
 <p>把第一个输入的数字和7比较，如果大于7就跳转（紧接着爆炸，其实就是到default），ja是无符号比较。也就是说我们可以确定第一个整数的范围就是<strong>0-7</strong>。</p>
 <p>所以最后跳转的地方根据eax不同有8中情况。这应该就是switch语句了，调试查询处这几个跳转的地址：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E8%B7%B3%E8%BD%AC.png" alt="跳转"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E8%B7%B3%E8%BD%AC.png" alt="跳转"></p>
 <p>接着往下看代码，根据这个地址分成了8个部分：</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/switch2.png" alt="switch2"></p>
+<p><img src="/2020/11/01/BinaryBomb/switch2.png" alt="switch2"></p>
 <p>也就是说这一关的答案不是唯一的，下面我们就拿2号开始尝试。</p>
 <p>把0x62存入到-0x9(%ebp)中，把我们输入的第三个整数存入到eax中和0x2f3比较，不相等就爆炸，所以如果第一个整数是2那第三个整数应该是755（十进制）,接着jump:</p>
-<p><img src="/2020/11/01/%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%82%B8%E5%BC%B9/%E5%AD%97%E7%AC%A6.png" alt="字符"></p>
+<p><img src="/2020/11/01/BinaryBomb/%E5%AD%97%E7%AC%A6.png" alt="字符"></p>
 <p>到了这个函数的最后，可以得知0x62就是第二个输入，0x62对应的是字符b。</p>
 <p>所以其中一种可能的输入是 <strong>2 b 755</strong>。其他的不再赘述，可以自行尝试，至此，第三关通过！</p>
 
