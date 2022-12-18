@@ -126,6 +126,34 @@
 <td>向下移动 n 行</td>
 </tr>
 <tr>
+<td>Ctrl-u &#x2F;Ctrl-b</td>
+<td>上&#x2F;下半页</td>
+</tr>
+<tr>
+<td>Ctrl-b&#x2F;Ctrl-f</td>
+<td>向上&#x2F;向下翻页</td>
+</tr>
+<tr>
+<td>b&#x2F;w</td>
+<td>上一个&#x2F;下一个单词</td>
+</tr>
+<tr>
+<td>ge&#x2F;e</td>
+<td>上一个&#x2F;下一个词尾</td>
+</tr>
+<tr>
+<td>0&#x2F;$</td>
+<td>行的开始&#x2F;结束</td>
+</tr>
+<tr>
+<td>^</td>
+<td>行非空白开头</td>
+</tr>
+<tr>
+<td>zt&#x2F;zz&#x2F;zb</td>
+<td>当前行居上&#x2F;居中&#x2F;居下</td>
+</tr>
+<tr>
 <td>&#x2F;word</td>
 <td>向光标之下寻找一个名称为 word 的字串</td>
 </tr>
@@ -138,12 +166,16 @@
 <td>反向”进行前一个搜寻动作</td>
 </tr>
 <tr>
-<td>:n1,n2s&#x2F;word1&#x2F;word2&#x2F;g</td>
-<td>n1 与 n2 为数字。在第 n1 与 n2 列之间寻找word1 这个字串，并将该字串取代为 word2</td>
+<td>:s&#x2F;word1&#x2F;word2&#x2F;g</td>
+<td>在当前行寻找 word1 这个字串，并将该字串取代为 word2</td>
 </tr>
 <tr>
-<td>:1,$s&#x2F;word1&#x2F;word2&#x2F;g</td>
-<td>从第一列到最后一列寻找 word1 字串，并将该字串取代为 word2</td>
+<td>:n1,n2s&#x2F;word1&#x2F;word2&#x2F;g</td>
+<td>在第 n1 与 n2 行之间寻找word1 这个字串，并将该字串取代为 word2</td>
+</tr>
+<tr>
+<td>:%s&#x2F;word1&#x2F;word2&#x2F;g</td>
+<td>替换每一行的所有 word1 为 word2</td>
 </tr>
 <tr>
 <td>:1,$s&#x2F;word1&#x2F;word2&#x2F;gc</td>
@@ -170,7 +202,7 @@
 <td>复原前一个动作</td>
 </tr>
 <tr>
-<td>[Ctrl]+r</td>
+<td>Ctrl-r</td>
 <td>重做上一个动作</td>
 </tr>
 <tr>
