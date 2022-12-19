@@ -105,8 +105,8 @@
   <entry>
     <title>Vim Memo List</title>
     <url>/2022/12/06/Vim%20Memo%20List/</url>
-    <content><![CDATA[<h2 id="Normal"><a href="#Normal" class="headerlink" title="Normal"></a>Normal</h2><span id="more"></span>
-<table>
+    <content><![CDATA[<p>…<span id="more"></span></p>
+<h2 id="Normal"><a href="#Normal" class="headerlink" title="Normal"></a>Normal</h2><table>
 <thead>
 <tr>
 <th>Command</th>
@@ -544,6 +544,128 @@
       <tags>
         <tag>cs</tag>
         <tag>gdb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Raft论文阅读</title>
+    <url>/2022/04/12/raft/</url>
+    <content><![CDATA[<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><ul>
+<li>Strong Leader：比如日志只从 Leader 发送给其他服务器。这种方式简化了对复制日志的管理并且使得 Raft 算法更加易于理解。</li>
+<li>Leader election：使用随机计时器来选举领导人，解决冲突时会更加简单快捷<span id="more"></span></li>
+</ul>
+<h2 id="复制状态机"><a href="#复制状态机" class="headerlink" title="复制状态机"></a>复制状态机</h2><p><img src="/2022/04/12/raft/pic1.png" alt="状态机"></p>
+<p>复制状态机通常都是基于复制日志实现的，如上图。每一个服务器存储一个包含一系列指令的日志，并且按照日志的顺序进行执行。每一个日志都按照相同的顺序包含相同的指令，所以每一个服务器都执行相同的指令序列。因为每个状态机都是确定的，每一次执行操作都产生相同的状态和同样的序列。</p>
+<p><strong>一致性算法的任务是保证复制日志的一致性。</strong>服务器上的一致性模块接收客户端发送的指令然后添加到自己的日志中。它和其他服务器上的一致性模块进行通信来保证每一个服务器上的日志最终都以相同的顺序包含相同的请求，即使有些服务器发生故障。一旦指令被正确的复制，每一个服务器的状态机按照日志顺序处理他们，然后输出结果被返回给客户端。因此，服务器集群看起来形成了一个高可靠的状态机。</p>
+<h2 id="Paxos算法的问题"><a href="#Paxos算法的问题" class="headerlink" title="Paxos算法的问题"></a>Paxos算法的问题</h2><ul>
+<li>晦涩难懂</li>
+<li>单决策，还没有一种被广泛认同的多决策问题的算法</li>
+<li>不易于构建实际系统：Paxos uses a symmetric peer-to-peer approach at its core (though it eventually suggests a weak form of leadership as a performance optimization).</li>
+</ul>
+<h2 id="Raft设计目标"><a href="#Raft设计目标" class="headerlink" title="Raft设计目标"></a>Raft设计目标</h2><ul>
+<li>必须提供一个完整的基础以供实现实际的系统</li>
+<li>必须在任何情况下都是安全的</li>
+<li>在大多数的情况下都是可用的</li>
+<li>它的大部分操作必须是高效的</li>
+<li>最重要也是最大的挑战是可理解性</li>
+</ul>
+<h2 id="Raft-一致性算法"><a href="#Raft-一致性算法" class="headerlink" title="Raft 一致性算法"></a>Raft 一致性算法</h2><p>Raft 将一致性问题分解成了三个相对独立的子问题：</p>
+<ul>
+<li><strong>领导选举</strong>：当现存的 Leader 发生故障的时候，一个新的 Leader 需要被选举出来（章节 5.2）</li>
+<li><strong>日志复制</strong>：Leader 必须从 Client 接收日志条目（log entries）然后复制到集群中的其他节点，并强制要求其他节点的日志和自己保持一致。</li>
+<li><strong>安全性</strong>：在 Raft 中安全性的关键是在图 3 中展示的状态机安全：如果有任何的服务器节点已经应用了一个确定的日志条目到它的状态机中，那么其他服务器节点不能在同一个日志索引位置应用一个不同的指令。章节 5.4 阐述了 Raft 算法是如何保证这个特性的；这个解决方案涉及到选举机制（5.2 节）上的一个额外限制。</li>
+</ul>
+<h3 id="Raft-基础"><a href="#Raft-基础" class="headerlink" title="Raft 基础"></a>Raft 基础</h3><ul>
+<li>Leader ：处理所有 Client 的请求</li>
+<li>Follower ：不会发送任何请求，只是简单地响应来自 Leader 和 candidates 的请求</li>
+<li>Candidate ：在选举新 Leader 时使用</li>
+</ul>
+<p><img src="/2022/04/12/raft/pic2.png" alt="pic2"></p>
+<p>Raft 把时间分成任意长度的 term，用连续的整数标记，每一段 term 从一次选举开始， Raft 保证了在一个给定的任期内，最多只有一个 Leader（Candidate 赢得选举后行使 Leader 的职责）。term 在 Raft 算法中充当逻辑时钟的作用。</p>
+<p><img src="/2022/04/12/raft/pic3.png" alt="pic3"></p>
+<p>每当服务器之间通信的时候都会交换当前 term#；如果一个服务器的当前 term#比其他服务器小，那么他会更新自己的编号到较大的编号值。如果一个 candidate 或者 Leader 发现自己的 term# 过期了，那么他会立即恢复成 Follower 状态。如果一个节点接收到一个包含过期的 term# 的请求，那么他会直接拒绝这个请求。</p>
+<p>服务器节点之间通过RPC进行交流，基本的算法只需要两种类型的RPC：</p>
+<ul>
+<li>RequestVote：由 Candidates 在选举期间发起</li>
+<li>AppendEntries：由 Leader 发起，用来复制日志和提供一种心跳机制（carry no log entries）</li>
+</ul>
+<h3 id="Leader-election"><a href="#Leader-election" class="headerlink" title="Leader election"></a>Leader election</h3><p>当服务器启动时，都是处于 Follower 状态。如果一个 Follower 在一段时间（election timeout）没有收到任何消息，会认为系统中没有可用的 Leader，从而触发一次选举。</p>
+<p>开启一次选举时， Follower 增加当前 term# 并切换到 Candidate 状态，直到以下情况发生：</p>
+<ul>
+<li>Candidate 收到了 majority 的投票，赢得了此次选举，转变为 Leader 状态，并向其他 Server 发送心跳，通告自己的 Leader 身份<ul>
+<li>Each server will vote for at most one candidate in a given term, on a first-come-first-served basis</li>
+</ul>
+</li>
+<li>在等待投票结果的时候，此 Candidate 可能会收到其他 server 的 claim（heartbeat with term#），如果这个 Leader 的 term# 不小于此 Candidate 当前的 term#，那么 Candidate 会承认 Leader 合法并回到 Follower State</li>
+<li>Candidate 可能既没有赢得选举也没有输：如果有多个 Follower 同时成为Candidate，那么选票可能会被瓜分以至于没有 Candidate 可以赢得 majority 的支持。当这种情况发生的时候，每一个 Candidate 都会超时，然后通过增加当前 term# 来开始一轮新的选举</li>
+</ul>
+<p>Raft 算法使用随机 election timeouts (e.g., 150–300ms)。的方法来确保很少会发生选票瓜分的情况，同样的，每一个 Candidate 在开始一次选举的时候会重置一个随机的选举超时时间，然后在超时时间内等待投票的结果。使用随机化来简化 Raft 中 Leader 选举算法（相比Paxos而言）</p>
+<h3 id="Log-replication"><a href="#Log-replication" class="headerlink" title="Log replication"></a>Log replication</h3><p>一旦一个 Leader 被选举出来，他就开始为 Client 提供服务。Client 的每一个请求都包含一条被复制状态机执行的指令。领导人把这条指令作为一条新的 log entry 附加到日志中去，然后并行的发起 AppendEntries RPCs 给其他的服务器，让他们复制这条 log entry。当此 log entry 已经写入大多数的 Server， Leader 就会执行此指令，然后返回结果给 Client。Leader 会不断重试，直到确保所有的 Follower 都存储了此 log entry。</p>
+<p><img src="/2022/04/12/raft/pic4.png" alt="pic4"></p>
+<p>如上图所示。每一个 log entry 存储一条状态机指令和从领导人收到这条指令时的term#。日志中的 term# 用来检查是否出现不一致的情况。每一个 log entry 同时也都有一个整数索引值来表明它在日志中的位置。领导人跟踪了最大的将会被提交的日志项的索引，并且索引值会被包含在未来的所有 AppendEntries RPCs（包括心跳包）。一旦 Follower 知道一条 log entry 已经被提交（Leader 保证其会应用到状态机中），那么他也会将这个 log entry 应用到本地的状态机中（按照日志的顺序）。</p>
+<p>日志匹配特性：</p>
+<ul>
+<li>对于一个给定的 term#，最多只会有一个 Leader 被选举出来</li>
+<li>Leader 绝对不会删除或者覆盖自己的日志，只会增加</li>
+<li>如果两个日志在某一相同索引位置 log entry 的 term# 相同，那么我们就认为这两个日志从头到该索引位置之间的内容完全一致<ul>
+<li>在发送 AppendEntries RPC 的时候，Leader 会把新的 log entry 前紧挨着的条目的索引位置和任期号包含在日志内。如果 Follower 在它的日志中找不到包含相同 index 和 term# 的 entry，那么他就会拒绝接收此 entry</li>
+</ul>
+</li>
+<li>如果某个 log entry 在某个 term# 中已经被提交，那么这个 entry 必然出现在更大 term# 的所有 Leader 中</li>
+<li>如果某一服务器已将给定索引位置的日志条目应用至其状态机中，则其他任何服务器在该索引位置不会应用不同的日志条目</li>
+</ul>
+<p><img src="/2022/04/12/raft/pic5.png" alt="pic5"></p>
+<p>如上图所示，Leader 崩溃的情况下会使得日志处于不一致的状态，因为老的 Leader 可能还没有把log entry 复制到其他 Server 就挂掉了。</p>
+<p>在 Raft 算法中，Leader 是通过强制 Followers 直接复制自己的日志来处理不一致问题的（Leader 从来不会覆盖或者删除自己的日志）。Leader 必须找到最后两者达成一致的地方，然后删除 Follower 从那个点之后的所有 log entry，并发送自己在那个点之后的日志给跟 Follower（添加或覆盖）。</p>
+<p>Leader 针对每一个 Follower 都维护了一个 nextIndex（初始化为 Leader 的最后一个 entry 的 index + 1），表示下一个需要发送给 Follower 的那个 entry 的索引，如果 Follower 的日志和 Leader 不一致，那么在下一次的 AppendEntries RPC 时的一致性检查就会失败。在被 Follower 拒绝之后，领导人就会减小 nextIndex 值并进行重试。最终会达成一致。</p>
+<h3 id="Safety"><a href="#Safety" class="headerlink" title="Safety"></a>Safety</h3><p>到目前为止描述的机制并不能充分的保证每一个状态机会按照相同的顺序执行相同的指令。例如一个 Follower 可能会进入不可用状态，但 Leader 已经提交了若干日志，整个 Follower 如果之后被选举为 Leader，会导致不同的状态机执行了不同的指令序列，所以下面还要增加一个选举的限制：</p>
+<p>Candidate 为了赢得选举必须联系集群中的大部分节点，这意味着每一个已经提交的 log entry 在这些服务器节点中肯定存在于至少一个节点上。（两个 majority 至少有一个公共元素）。RequestVote RPC 实现了这样的限制：RPC 中包含了 Candidate 的日志信息，然后投票人会拒绝掉那些日志没有自己新（更大的 term# 或者 更多的 entry）的投票请求。</p>
+<p>Leader 可能把日志复制到了大多数服务器上，而在提交之前崩溃了，如下图：</p>
+<p><img src="/2022/04/12/raft/pic6.png" alt="pic6"></p>
+<p>导致一条已经被存储到大多数节点上的老日志条目，也依然有可能会被未来的 Leader 覆盖掉 （c → d）。（d，e 是 c 后的两种不同的情况）</p>
+<p>为了消除上图里描述的情况，在提交之前 term 的日志项时，必须保证当前 term 新建的日志项已经复制到超过半数节点。这样，之前 term 的日志项才算真正提交的。如上图 e 所示，通过 4 的提交，间接保证了 2 的提交，不会出现日志被后续leader覆盖的情况</p>
+<h3 id="Follower和Candidate崩溃"><a href="#Follower和Candidate崩溃" class="headerlink" title="Follower和Candidate崩溃"></a>Follower和Candidate崩溃</h3><p>如果 Follower 或者 Candidate 崩溃了，那么后续发送给他们的 RPCs 都会失败。Raft 中处理这种失败就是简单的通过无限的重试；如果崩溃的机器重启了，那么这些 RPC 就会完整的成功。</p>
+<h3 id="Timing-and-availability"><a href="#Timing-and-availability" class="headerlink" title="Timing and availability"></a>Timing and availability</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line">broadcastTime ≪ electionTimeout ≪ MTBF <span class="comment">//平均故障间隔时间</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>广播时间必须比选举超时时间小一个量级，这样 Leader 才能够发送稳定的心跳消息来阻止 Followers 开始进入选举状态</li>
+<li>选举超时时间应该要比平均故障间隔时间小上几个数量级，这样整个系统才能稳定的运行。</li>
+</ul>
+<p>广播时间和平均故障间隔时间是由系统决定的，但是选举超时时间是我们自己选择的</p>
+<h3 id="Log-compaction"><a href="#Log-compaction" class="headerlink" title="Log compaction"></a><strong>Log compaction</strong></h3><ul>
+<li>Each server takes snapshots independently, covering just the committed entries in its log</li>
+<li>Raft also includes a small amount of metadata in the snapshot: the <em>last included index</em> is the index of the last entry in the log that the snapshot replaces (the last entry the state machine had applied), and the <em>last included term</em> is the term of this entry.</li>
+<li>When a follower receives a snapshot with this RPC<ul>
+<li>Usually the snapshot will contain new information not already in the recipient’s log. In this case, the follower discards its entire log</li>
+<li>If instead the follower receives a snapshot that describes a prefix of its log (due to retransmission or by mistake), then log entries covered by the snapshot are deleted but entries following the snapshot are still valid and must be retained.</li>
+</ul>
+</li>
+<li>Servers must decide when to snapshot. One simple strategy is to take a snapshot when the log reaches a fixed size in bytes.</li>
+<li>The operating system’s copy-on-write support (e.g., fork on Linux) can be used to create an in-memory snapshot of the entire state machine</li>
+</ul>
+<h3 id="Client-interaction"><a href="#Client-interaction" class="headerlink" title="Client interaction"></a><strong>Client interaction</strong></h3><ul>
+<li>if the leader crashes after committing the log entry but before responding to the client, the client will retry the command with a new leader, causing it to be executed a second time.<ul>
+<li>The solution is for clients to assign unique serial numbers to every command. Then, the state machine tracks the latest serial number processed for each client, along with the associated response. If it receives a command whose serial number has already been executed, it responds immediately without re-executing the request.</li>
+</ul>
+</li>
+</ul>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p>如何维护 term#</p>
+<p>考虑以下几种情况：</p>
+<ul>
+<li>leader 已经提交，但还没有通知其他server，这个时候挂了</li>
+<li>leader 发送 AE RPC 后挂了，已经复制到了大多数server上</li>
+<li>leader 提交后挂了，但还没有在通知应用层执行</li>
+</ul>
+<p><strong>Suppose a new leader is elected while the network is partitioned, but the old leader is in a different partition. How will the old leader know to stop committing new entries?</strong></p>
+<p>The old leader will either not be able to get a majority of successful responses to its AppendEntries RPCs (if it’s in a minority partition), or if it can talk to a majority, that majority must overlap with the new leader’s majority, and the servers in the overlap will tell the old leader that there’s a higher term. That will cause the old leader to switch to follower.</p>
+<p><strong>What if the election timeout is too short? Will that cause Raft to malfunction?</strong></p>
+<p>A bad choice of election timeout does not affect safety, it onlyaffects liveness. If the election timeout is too small, then followers may repeatedly time out before the leader has a chance to send out any AppendEntries. In that case Raft may spend all its time electing new leaders, and no time processing client requests. If the election timeout is too large, then there will be a needlessly large pause after a leader failure before a new leader is elected.</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>英文<a href="https://ramcloud.atlassian.net/wiki/download/attachments/6586375/raft.pdf">论文地址</a></p>
+<p>中文<a href="https://github.com/maemual/raft-zh_cn/blob/master/raft-zh_cn.md">翻译地址</a></p>
+<p>Raft<a href="http://thesecretlivesofdata.com/raft/">动画演示</a></p>
+]]></content>
+      <tags>
+        <tag>分布式</tag>
+        <tag>算法</tag>
       </tags>
   </entry>
 </search>

@@ -6,7 +6,7 @@
   <link href="https://la4am12.github.io/atom.xml" rel="self"/>
   
   <link href="https://la4am12.github.io/"/>
-  <updated>2022-12-10T07:06:29.068Z</updated>
+  <updated>2022-12-19T03:29:37.152Z</updated>
   <id>https://la4am12.github.io/</id>
   
   <author>
@@ -21,10 +21,10 @@
     <link href="https://la4am12.github.io/2022/12/06/Vim%20Memo%20List/"/>
     <id>https://la4am12.github.io/2022/12/06/Vim%20Memo%20List/</id>
     <published>2022-12-06T08:45:07.000Z</published>
-    <updated>2022-12-10T07:06:29.068Z</updated>
+    <updated>2022-12-19T03:29:37.152Z</updated>
     
     
-    <summary type="html">&lt;h2 id=&quot;Normal&quot;&gt;&lt;a href=&quot;#Normal&quot; class=&quot;headerlink&quot; title=&quot;Normal&quot;&gt;&lt;/a&gt;Normal&lt;/h2&gt;</summary>
+    <summary type="html">&lt;p&gt;…&lt;/p&gt;</summary>
     
     
     
@@ -54,6 +54,27 @@
     <category term="区块链" scheme="https://la4am12.github.io/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/"/>
     
     <category term="比特币" scheme="https://la4am12.github.io/tags/%E6%AF%94%E7%89%B9%E5%B8%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Raft论文阅读</title>
+    <link href="https://la4am12.github.io/2022/04/12/raft/"/>
+    <id>https://la4am12.github.io/2022/04/12/raft/</id>
+    <published>2022-04-12T08:45:07.000Z</published>
+    <updated>2022-12-19T03:24:03.372Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;介绍&quot;&gt;&lt;a href=&quot;#介绍&quot; class=&quot;headerlink&quot; title=&quot;介绍&quot;&gt;&lt;/a&gt;介绍&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;Strong Leader：比如日志只从 Leader 发送给其他服务器。这种方式简化了对复制日志的管理并且使得 Raft 算法更加易于理解。&lt;/li&gt;
+&lt;li&gt;Leader election：使用随机计时器来选举领导人，解决冲突时会更加简单快捷&lt;/li&gt;&lt;/ul&gt;</summary>
+    
+    
+    
+    
+    <category term="分布式" scheme="https://la4am12.github.io/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+    <category term="算法" scheme="https://la4am12.github.io/tags/%E7%AE%97%E6%B3%95/"/>
     
   </entry>
   
