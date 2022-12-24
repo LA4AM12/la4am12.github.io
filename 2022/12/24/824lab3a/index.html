@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha256-Z1K5uhUaJXA7Ll0XrZ/0JhX4lAtZFpT6jkKrEDT0drU=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"la4am12.github.io","root":"/","images":"/images","scheme":"Mist","darkmode":false,"version":"8.14.0","exturl":false,"sidebar":{"position":"left","display":"remove","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Part A: Key&#x2F;value service without snapshots The kvserver code submits the Put&#x2F;Append&#x2F;Get operation to Raft, so that the Raft log holds a sequence of Put&#x2F;Append&#x2F;Get operations.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mit6.824 lab 3A实现思路">
+<meta property="og:url" content="https://la4am12.github.io/2022/12/24/824lab3a/index.html">
+<meta property="og:site_name" content="星宿长安">
+<meta property="og:description" content="Part A: Key&#x2F;value service without snapshots The kvserver code submits the Put&#x2F;Append&#x2F;Get operation to Raft, so that the Raft log holds a sequence of Put&#x2F;Append&#x2F;Get operations.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-12-24T06:00:07.000Z">
+<meta property="article:modified_time" content="2022-12-24T06:08:48.764Z">
+<meta property="article:author" content="La4am&amp;12">
+<meta property="article:tag" content="course lab">
+<meta property="article:tag" content="raft">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://la4am12.github.io/2022/12/24/824lab3a/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"https://la4am12.github.io/2022/12/24/824lab3a/","path":"2022/12/24/824lab3a/","title":"Mit6.824 lab 3A实现思路"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Mit6.824 lab 3A实现思路 | 星宿长安</title>
+  
+
+
+
+
+
+
+  <script async defer data-website-id="" src=""></script>
+
+  <script defer data-domain="" src=""></script>
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="星宿长安" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">星宿长安</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-rss"><a href="/atom.xml" rel="section"><i class="fa fa-rss fa-fw"></i>RSS</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://la4am12.github.io/2022/12/24/824lab3a/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="La4am&12">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="星宿长安">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Mit6.824 lab 3A实现思路 | 星宿长安">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Mit6.824 lab 3A实现思路
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-12-24 14:00:07" itemprop="dateCreated datePublished" datetime="2022-12-24T14:00:07+08:00">2022-12-24</time>
+    </span>
+
+  
+    <span class="post-meta-item" title="Word count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Word count in article: </span>
+      <span>6.9k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>6 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Part-A-Key-x2F-value-service-without-snapshots"><a href="#Part-A-Key-x2F-value-service-without-snapshots" class="headerlink" title="Part A: Key&#x2F;value service without snapshots"></a><strong>Part A: Key&#x2F;value service without snapshots</strong></h2><blockquote>
+<p>The kvserver code submits the Put&#x2F;Append&#x2F;Get operation to Raft, so that the Raft log holds a sequence of Put&#x2F;Append&#x2F;Get operations. All of the kvservers execute operations from the Raft log in order, applying the operations to their key&#x2F;value databases.</p>
+</blockquote>
+<span id="more"></span>
+
+<blockquote>
+<p>Your first task is to implement a solution that works when there are no dropped messages, and no failed servers.</p>
+</blockquote>
+<p>先实现一个在网络条件正常情况下能顺利运行的简易版本：</p>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p>客户端要发起 Put&#x2F;Append&#x2F;Get RPC 请求：</p>
+<p>向作为 Leader 的 server 发起请求， 所以需要维护一个 LeaderId</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Clerk <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	leaderId <span class="type">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MakeClerk</span><span class="params">(servers []*labrpc.ClientEnd)</span></span> *Clerk &#123;</span><br><span class="line">	...</span><br><span class="line">	ck.leaderId = <span class="number">0</span>      </span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>发起Get请求，当请求的服务器不是 Leader 的时候，修改 LeaderId，再次请求，客户端对错误的处理是重试，Put&#x2F;Append请求同理</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ck *Clerk)</span></span> Get(key <span class="type">string</span>) <span class="type">string</span> &#123;</span><br><span class="line">	args := GetArgs&#123;</span><br><span class="line">		ClientId:    ck.clientId,</span><br><span class="line">		OperationId: ck.operationId,</span><br><span class="line">		Key:         key,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		requestId := nrand()</span><br><span class="line">		reply := GetReply&#123;&#125;</span><br><span class="line">		DPrintf(<span class="string">&quot;[requestId %v]Sending Get RPC to [%v]: &#123;args %v&#125;&quot;</span>, requestId, ck.leaderId, args)</span><br><span class="line">		ok := ck.servers[ck.leaderId].Call(<span class="string">&quot;KVServer.Get&quot;</span>, &amp;args, &amp;reply)</span><br><span class="line">		DPrintf(<span class="string">&quot;[requestId %v]Get RPC to [%v]: &#123;reply %v&#125; &#123;ok %v&#125;&quot;</span>, requestId, ck.leaderId, reply, ok)</span><br><span class="line">		<span class="keyword">if</span> !ok || reply.Err == ErrWrongLeader &#123;</span><br><span class="line">			ck.leaderId = (ck.leaderId + <span class="number">1</span>) % <span class="built_in">len</span>(ck.servers)</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		ck.operationId++</span><br><span class="line">		<span class="keyword">if</span> reply.Err == ErrNoKey &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="string">&quot;&quot;</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> reply.Value</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p>对收到的客户端发来的请求操作，将要执行的操作封装在<code>Op</code>中，传给 Raft 层的 <code>Start()</code> 函数，达成共识：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Op <span class="keyword">struct</span> &#123;</span><br><span class="line">	Type  <span class="type">string</span></span><br><span class="line">	Key   <span class="type">string</span></span><br><span class="line">	Value <span class="type">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其次，需要一个存储数据的地方，实验中简单使用一个map进行kv的存储：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> KVServer <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	kvStore <span class="keyword">map</span>[<span class="type">string</span>]<span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">StartKVServer</span><span class="params">(servers []*labrpc.ClientEnd, me <span class="type">int</span>, persister *raft.Persister, maxraftstate <span class="type">int</span>)</span></span> *KVServer &#123;</span><br><span class="line">	...</span><br><span class="line">	kv.kvStore = <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="type">string</span>]<span class="type">string</span>)</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>RPC handler 收到请求后，需要等待 raft 层 commit 该条日志，也就是 server 收到 applyCh 上的信息后，将该操作 apply 到 <code>kvStore</code> 中，再响应客户端。</p>
+<p>所以 server 需要一直监听 applyCh 上的信息，可以使用一个协程去完成此工作。</p>
+<p>另外，当收到 applyCh 上的信息后，要通知 handler 去响应对应发起请求的客户端。如何做到这一点呢？ 由于 start() 会返回该日志的 index，一个实现方案是创建一个 <code>notifyChs map[int]chan</code> ，以 index 作为键，创建一个 chan 进行等待，当收到 applyCh 上的信息后，去<code>notifyChs</code>中找到对应的 chan 进行通知。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> KVServer <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	notifyChs  <span class="keyword">map</span>[<span class="type">int</span>]<span class="keyword">chan</span> OpContext</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">StartKVServer</span><span class="params">(servers []*labrpc.ClientEnd, me <span class="type">int</span>, persister *raft.Persister, maxraftstate <span class="type">int</span>)</span></span> *KVServer &#123;</span><br><span class="line">	...</span><br><span class="line">	kv.notifyChs = <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="type">int</span>]<span class="keyword">chan</span> OpContext)</span><br><span class="line">	<span class="keyword">go</span> kv.applier()</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>至此，可以通过第一个测试：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">la4am12@Workstatio:~/mit6.824/lab/src/kvraft$ go <span class="built_in">test</span> -run TestBasic3A -race</span><br><span class="line">Test: one client (3A) ...</span><br><span class="line">  ... Passed --  15.1  5  7733 1262</span><br><span class="line">PASS</span><br><span class="line">ok      6.824/kvraft    15.122s</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Now you should modify your solution to continue in the face of network and server failures.</p>
+</blockquote>
+<p>接下来考虑异常情况下服务的可靠性，可能会面临如下问题：</p>
+<ul>
+<li>client 和 server 间网络异常，例如，server 收到 client 的指令并执行，由于某种原因，client 没有收到这个 server 的回复，client 会再次发起这个命令，导致一个操作在 server 上 apply 多次，最终结果异常。</li>
+<li>server 之间网络异常，例如调用 Start() 后，raft 对该日志并没有达成共识，当在 applyCh 中收到该 index 的日志被提交时，可能并不是起初的那条日志了。因为 raft 会把没有达成共识的日志覆盖掉。</li>
+</ul>
+<p>对于第一个问题，要保证 linearizable，每一个相同的请求，只能够执行一次。所以，server 需要能够发现 resend 的请求，并直接返回原本的结果，而不是继续执行。</p>
+<p>论文中给出的可行方案是 server 为每个 client 维护一个 session，以 clientId + operationId 唯一区分一个请求，同时记录每个请求的回复。考虑这样一种场景， client 向 leader 服务器发起请求，commit 之后，leader crush，此时 client 选择下一个 leader 重新发起请求，此时虽然是不同的服务器收到该请求，同样不能执行第二次。所以，所有的服务器必须都能够区分出 resend 的请求。</p>
+<h3 id="客户端修改"><a href="#客户端修改" class="headerlink" title="客户端修改"></a>客户端修改</h3><p>初始化一个随机数作为 clientId，同时以一个递增的数作为 operationId，client 在没有处理好一个请求的时候不会进行下一个请求，所以使用递增的 id 可以让 server 清理小于该 id 的所有 reply 记录。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Clerk <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	clientId    <span class="type">int64</span></span><br><span class="line">	operationId <span class="type">int64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MakeClerk</span><span class="params">(servers []*labrpc.ClientEnd)</span></span> *Clerk &#123;</span><br><span class="line">	...</span><br><span class="line">	operationId = <span class="number">0</span></span><br><span class="line">	ck.clientId = nrand()</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在请求参数中携带上Id信息：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> PutAppendArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	ClientId    <span class="type">int64</span></span><br><span class="line">	OperationId <span class="type">int64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> GetArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	ClientId    <span class="type">int64</span></span><br><span class="line">	OperationId <span class="type">int64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>client 在收到成功的响应后递增 operationId 。</p>
+<h3 id="服务端修改"><a href="#服务端修改" class="headerlink" title="服务端修改"></a>服务端修改</h3><p>使用一个 map 去记录每个 client 的上一个 operation 的信息：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> KVServer <span class="keyword">struct</span> &#123;</span><br><span class="line">	...</span><br><span class="line">	lastOpMemo <span class="keyword">map</span>[<span class="type">int64</span>]OpContext</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> OpContext <span class="keyword">struct</span> &#123;</span><br><span class="line">	ClientId    <span class="type">int64</span></span><br><span class="line">	OperationId <span class="type">int64</span></span><br><span class="line">	Reply       <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以 PutAppend 请求为例，server 收到请求后，要检查是否为 duplicated request，当收到 notifyCh 的信息后，要检查是否为原本的 operation，应对上述描述的第二个问题。</p>
+<p>每个请求需要进行超时等待。例如可能会出现这种情况：假设所有 client 向一个 server 发起了请求后，server crush，此时日志没有复制到大多数节点上，该 server 恢复后不再是 leader，那么如果没有 client 继续提交请求，该 index 处的 chan 始终不会有结果，处于 livelock 状态，所以需要等待一段时间（设置的500ms）后返回超时错误给client。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(kv *KVServer)</span></span> PutAppend(args *PutAppendArgs, reply *PutAppendReply) &#123;</span><br><span class="line">	op := Op&#123;</span><br><span class="line">		ClientId:    args.ClientId,</span><br><span class="line">		OperationId: args.OperationId,</span><br><span class="line">		Type:        args.Op,</span><br><span class="line">		Key:         args.Key,</span><br><span class="line">		Value:       args.Value,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	kv.mu.RLock()</span><br><span class="line">	<span class="keyword">if</span> lastOp, ok := kv.isDuplicated(op); ok &#123;</span><br><span class="line">		DPrintf(<span class="string">&quot;server %v received duplicated %v request for clientId %v OperationId %v&quot;</span>, kv.me, args.Op, args.ClientId, args.OperationId)</span><br><span class="line">		reply.Err = lastOp.Reply.(PutAppendReply).Err</span><br><span class="line">		kv.mu.RUnlock()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	kv.mu.RUnlock()</span><br><span class="line"></span><br><span class="line">	index, _, isLeader := kv.rf.Start(op)</span><br><span class="line">	<span class="keyword">if</span> !isLeader &#123;</span><br><span class="line">		reply.Err = ErrWrongLeader</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	notifyCh := <span class="built_in">make</span>(<span class="keyword">chan</span> OpContext, <span class="number">1</span>)</span><br><span class="line">	kv.mu.Lock()</span><br><span class="line">	kv.notifyChs[index] = notifyCh</span><br><span class="line">	kv.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">select</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> opContext := &lt;-notifyCh:</span><br><span class="line">		<span class="keyword">if</span> opContext.ClientId != args.ClientId || opContext.OperationId != args.OperationId &#123;</span><br><span class="line">			reply.Err = ErrWrongLeader</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		reply.Err = (opContext.Reply).(PutAppendReply).Err</span><br><span class="line">	<span class="keyword">case</span> &lt;-time.After(time.Duration(Timeout) * time.Millisecond):</span><br><span class="line">		reply.Err = ErrTimeout</span><br><span class="line">		DPrintf(<span class="string">&quot;PutAppend timeout : server %v clientId %v operationId %v&quot;</span>, kv.me, args.ClientId, args.OperationId)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在收到 applyCh 的信息后，也需要验证是否为重复命令。同时，在 apply 之后，要记录这个操作在 <code>lastOpMemo</code>中（这里直接进行覆盖，因为 client 在没有处理好一个请求时，不会进行下一个请求，似乎没有问题）：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(kv *KVServer)</span></span> applier() &#123;</span><br><span class="line">	<span class="keyword">for</span> !kv.killed() &#123;</span><br><span class="line">		applyMsg := &lt;-kv.applyCh</span><br><span class="line">		<span class="keyword">if</span> applyMsg.CommandValid &#123;</span><br><span class="line">			kv.mu.Lock()</span><br><span class="line">			op := applyMsg.Command.(Op)</span><br><span class="line">			<span class="keyword">var</span> opContext OpContext</span><br><span class="line">			<span class="keyword">if</span> lastOp, ok := kv.isDuplicated(op); ok &#123;</span><br><span class="line">				opContext = lastOp</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				opContext = kv.applyOp(op)</span><br><span class="line">				kv.lastOpMemo[op.ClientId] = opContext</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> notifyCh, ok := kv.notifyChs[applyMsg.CommandIndex]; ok &#123;</span><br><span class="line">				notifyCh &lt;- opContext</span><br><span class="line">				<span class="built_in">delete</span>(kv.notifyChs, applyMsg.CommandIndex)</span><br><span class="line">			&#125;</span><br><span class="line">			kv.mu.Unlock()</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>至此可以通过 lab 3A 测试：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">la4am12@Workstatio:~/mit6.824/lab/src/kvraft$ go <span class="built_in">test</span> -run 3A -race</span><br><span class="line">Test: one client (3A) ...</span><br><span class="line">  ... Passed --  15.1  5  7308 1199</span><br><span class="line">Test: ops complete fast enough (3A) ...</span><br><span class="line">  ... Passed --  10.1  3  4248    0</span><br><span class="line">Test: many clients (3A) ...</span><br><span class="line">  ... Passed --  15.5  5  7936 1711</span><br><span class="line">Test: unreliable net, many clients (3A) ...</span><br><span class="line">  ... Passed --  15.9  5  6027 1198</span><br><span class="line">Test: concurrent append to same key, unreliable (3A) ...</span><br><span class="line">  ... Passed --   1.3  3   216   52</span><br><span class="line">Test: progress <span class="keyword">in</span> majority (3A) ...</span><br><span class="line">  ... Passed --   0.4  5    42    2</span><br><span class="line">Test: no progress <span class="keyword">in</span> minority (3A) ...</span><br><span class="line">  ... Passed --   1.0  5   201    3</span><br><span class="line">Test: completion after heal (3A) ...</span><br><span class="line">  ... Passed --   1.0  5    58    3</span><br><span class="line">Test: partitions, one client (3A) ...</span><br><span class="line">  ... Passed --  22.1  5  7018 1170</span><br><span class="line">Test: partitions, many clients (3A) ...</span><br><span class="line">  ... Passed --  23.2  5 10787 1649</span><br><span class="line">Test: restarts, one client (3A) ...</span><br><span class="line">  ... Passed --  19.0  5 10060 1256</span><br><span class="line">Test: restarts, many clients (3A) ...</span><br><span class="line">  ... Passed --  19.6  5 16398 1706</span><br><span class="line">Test: unreliable net, restarts, many clients (3A) ...</span><br><span class="line">  ... Passed --  20.8  5  7043 1168</span><br><span class="line">Test: restarts, partitions, many clients (3A) ...</span><br><span class="line">  ... Passed --  26.8  5 17833 1524</span><br><span class="line">Test: unreliable net, restarts, partitions, many clients (3A) ...</span><br><span class="line">  ... Passed --  27.1  5  6445  920</span><br><span class="line">Test: unreliable net, restarts, partitions, random keys, many clients (3A) ...</span><br><span class="line">  ... Passed --  29.9  7 12051 1339</span><br><span class="line">PASS</span><br><span class="line">ok      6.824/kvraft    249.296s</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/course-lab/" rel="tag"># course lab</a>
+              <a href="/tags/raft/" rel="tag"># raft</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/12/06/Vim%20Memo%20List/" rel="prev" title="Vim Memo List">
+                  <i class="fa fa-chevron-left"></i> Vim Memo List
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">La4am&12</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>Word count total: </span>
+    <span title="Word count total">30k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>Reading time total &asymp;</span>
+    <span title="Reading time total">27 mins.</span>
+  </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

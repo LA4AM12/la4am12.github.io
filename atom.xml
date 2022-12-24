@@ -6,7 +6,7 @@
   <link href="https://la4am12.github.io/atom.xml" rel="self"/>
   
   <link href="https://la4am12.github.io/"/>
-  <updated>2022-12-19T03:29:37.152Z</updated>
+  <updated>2022-12-24T06:08:48.764Z</updated>
   <id>https://la4am12.github.io/</id>
   
   <author>
@@ -15,6 +15,27 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Mit6.824 lab 3A实现思路</title>
+    <link href="https://la4am12.github.io/2022/12/24/824lab3a/"/>
+    <id>https://la4am12.github.io/2022/12/24/824lab3a/</id>
+    <published>2022-12-24T06:00:07.000Z</published>
+    <updated>2022-12-24T06:08:48.764Z</updated>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;Part-A-Key-x2F-value-service-without-snapshots&quot;&gt;&lt;a href=&quot;#Part-A-Key-x2F-value-service-without-snapshots&quot; class=&quot;headerlink&quot; title=&quot;Part A: Key&amp;#x2F;value service without snapshots&quot;&gt;&lt;/a&gt;&lt;strong&gt;Part A: Key&amp;#x2F;value service without snapshots&lt;/strong&gt;&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;The kvserver code submits the Put&amp;#x2F;Append&amp;#x2F;Get operation to Raft, so that the Raft log holds a sequence of Put&amp;#x2F;Append&amp;#x2F;Get operations. All of the kvservers execute operations from the Raft log in order, applying the operations to their key&amp;#x2F;value databases.&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="course lab" scheme="https://la4am12.github.io/tags/course-lab/"/>
+    
+    <category term="raft" scheme="https://la4am12.github.io/tags/raft/"/>
+    
+  </entry>
   
   <entry>
     <title>Vim Memo List</title>
